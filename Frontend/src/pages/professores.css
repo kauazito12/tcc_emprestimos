@@ -1,0 +1,129 @@
+.professores-page {
+  width: 100%;
+}
+
+.mensagem-topo {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.mensagem-sucesso {
+  background: #dff6e4;
+  color: #1f6b35;
+  border: 1px solid #9ed8ab;
+}
+
+.mensagem-erro {
+  background: #fde3e3;
+  color: #9b1c1c;
+  border: 1px solid #f1b1b1;
+}
+
+.professores-card {
+  background: #efefef;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #d0d0d0;
+}
+
+.professores-card h2 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #000;
+}
+
+.professores-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  height: 44px;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.form-acoes {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.form-acoes button,
+.acoes-linha button {
+  height: 40px;
+  border: 1px solid #999;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.form-acoes button:hover,
+.acoes-linha button:hover {
+  background: #e7e7e7;
+}
+
+.btn-secundario {
+  background: #f7f7f7;
+}
+
+.btn-excluir {
+  background: #fff5f5;
+}
+
+.tabela-wrapper {
+  overflow-x: auto;
+}
+
+.tabela-professores {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.tabela-professores th,
+.tabela-professores td {
+  border: 1px solid #d5d5d5;
+  padding: 12px;
+  text-align: left;
+}
+
+.tabela-professores th {
+  background: #f3f3f3;
+}
+
+.acoes-linha {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.texto-vazio {
+  text-align: center;
+  color: #333;
+}

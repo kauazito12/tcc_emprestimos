@@ -1,0 +1,850 @@
+const express = require("express");
+const cors = require("cors");
+const pool = require("./db");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+console.log("SERVER CERTO INICIADO");
+
+app.get("/", (req, res) => {
+  res.send("Backend funcionando");
+});
+
+
+// DASHBOARD / HOME
+
+app.get("/dashboard/materiais-resumo", async (req, res) => {
+  try {
+    const resultado = await pool.query(`
+      SELECT
+        m.id,
+        m.nome,
+        m.tipo,
+        COALESCE(m.quantidade, 0) AS disponiveis,
+        COALESCE((
+          SELECT COUNT(*)
+          FROM emprestimos e
+          WHERE e.material_id = m.id
+            AND e.devolvido = FALSE
+        ), 0) AS emprestados
+      FROM materiais m
+      ORDER BY m.nome ASC
+    `);
+
+    const dados = resultado.rows.map((item) => ({
+      ...item,
+      total: Number(item.disponiveis) + Number(item.emprestados),
+    }));
+
+    res.json(dados);
+  } catch (erro) {
+    console.error("Erro ao buscar resumo do dashboard:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao buscar resumo do dashboard",
+      detalhe: erro.message,
+    });
+  }
+});
+
+
+// Cadastrar/ editar professores
+
+app.get("/professores", async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      "SELECT * FROM professores ORDER BY id DESC"
+    );
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error("Erro ao buscar professores:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao buscar professores",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.post("/professores", async (req, res) => {
+  try {
+    const { nome, email } = req.body;
+
+    if (!nome || !email) {
+      return res.status(400).json({
+        erro: "Nome e email são obrigatórios",
+      });
+    }
+
+    const resultado = await pool.query(
+      "INSERT INTO professores (nome, email) VALUES ($1, $2) RETURNING *",
+      [nome, email]
+    );
+
+    res.status(201).json(resultado.rows[0]);
+  } catch (erro) {
+    console.error("Erro ao cadastrar professor:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao cadastrar professor",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.put("/professores/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, email } = req.body;
+
+    if (!nome || !email) {
+      return res.status(400).json({
+        erro: "Nome e email são obrigatórios",
+      });
+    }
+
+    const resultado = await pool.query(
+      "UPDATE professores SET nome = $1, email = $2 WHERE id = $3 RETURNING *",
+      [nome, email, id]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ erro: "Professor não encontrado" });
+    }
+
+    res.json(resultado.rows[0]);
+  } catch (erro) {
+    console.error("Erro ao atualizar professor:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao atualizar professor",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.delete("/professores/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const emprestimosAtivos = await pool.query(
+      `
+      SELECT id
+      FROM emprestimos
+      WHERE professor_id = $1 AND devolvido = FALSE
+      `,
+      [id]
+    );
+
+    if (emprestimosAtivos.rows.length > 0) {
+      return res.status(400).json({
+        erro: "Não é possível excluir professor com empréstimos ativos",
+      });
+    }
+
+    const resultado = await pool.query(
+      "DELETE FROM professores WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ erro: "Professor não encontrado" });
+    }
+
+    res.json({ mensagem: "Professor excluído com sucesso" });
+  } catch (erro) {
+    console.error("Erro ao excluir professor:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao excluir professor",
+      detalhe: erro.message,
+    });
+  }
+});
+
+
+// Cadastrar/ editar materiais
+
+app.get("/materiais", async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      "SELECT * FROM materiais ORDER BY id DESC"
+    );
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error("Erro ao buscar materiais:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao buscar materiais",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.post("/materiais", async (req, res) => {
+  try {
+    const { nome, tipo, quantidade } = req.body;
+
+    if (!nome || !tipo || quantidade === undefined || quantidade === null) {
+      return res.status(400).json({
+        erro: "Nome, tipo e quantidade são obrigatórios",
+      });
+    }
+
+    if (Number(quantidade) < 0) {
+      return res.status(400).json({
+        erro: "Quantidade não pode ser negativa",
+      });
+    }
+
+    const resultado = await pool.query(
+      "INSERT INTO materiais (nome, tipo, quantidade) VALUES ($1, $2, $3) RETURNING *",
+      [nome, tipo, Number(quantidade)]
+    );
+
+    res.status(201).json(resultado.rows[0]);
+  } catch (erro) {
+    console.error("Erro ao cadastrar material:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao cadastrar material",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.put("/materiais/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, tipo, quantidade } = req.body;
+
+    if (!nome || !tipo || quantidade === undefined || quantidade === null) {
+      return res.status(400).json({
+        erro: "Nome, tipo e quantidade são obrigatórios",
+      });
+    }
+
+    if (Number(quantidade) < 0) {
+      return res.status(400).json({
+        erro: "Quantidade não pode ser negativa",
+      });
+    }
+
+    const resultado = await pool.query(
+      "UPDATE materiais SET nome = $1, tipo = $2, quantidade = $3 WHERE id = $4 RETURNING *",
+      [nome, tipo, Number(quantidade), id]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ erro: "Material não encontrado" });
+    }
+
+    res.json(resultado.rows[0]);
+  } catch (erro) {
+    console.error("Erro ao atualizar material:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao atualizar material",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.delete("/materiais/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const emprestimosAtivos = await pool.query(
+      `
+      SELECT id
+      FROM emprestimos
+      WHERE material_id = $1 AND devolvido = FALSE
+      `,
+      [id]
+    );
+
+    if (emprestimosAtivos.rows.length > 0) {
+      return res.status(400).json({
+        erro: "Não é possível excluir material com empréstimos ativos",
+      });
+    }
+
+    const resultado = await pool.query(
+      "DELETE FROM materiais WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ erro: "Material não encontrado" });
+    }
+
+    res.json({ mensagem: "Material excluído com sucesso" });
+  } catch (erro) {
+    console.error("Erro ao excluir material:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao excluir material",
+      detalhe: erro.message,
+    });
+  }
+});
+
+
+// ==controle de emprestimos/ devoluções==
+app.post("/emprestimos", async (req, res) => {
+  try {
+    const { professor_id, material_id } = req.body;
+
+    if (!professor_id || !material_id) {
+      return res.status(400).json({
+        erro: "professor_id e material_id são obrigatórios",
+      });
+    }
+
+    const professorExiste = await pool.query(
+      "SELECT * FROM professores WHERE id = $1",
+      [Number(professor_id)]
+    );
+
+    if (professorExiste.rows.length === 0) {
+      return res.status(404).json({ erro: "Professor não encontrado" });
+    }
+
+    const materialResult = await pool.query(
+      "SELECT * FROM materiais WHERE id = $1",
+      [Number(material_id)]
+    );
+
+    if (materialResult.rows.length === 0) {
+      return res.status(404).json({ erro: "Material não encontrado" });
+    }
+
+    const material = materialResult.rows[0];
+
+    if (Number(material.quantidade) <= 0) {
+      return res.status(400).json({ erro: "Material sem estoque" });
+    }
+
+    const resultado = await pool.query(
+      `
+      INSERT INTO emprestimos
+      (professor_id, material_id, data_emprestimo, devolvido)
+      VALUES ($1, $2, NOW(), FALSE)
+      RETURNING *
+      `,
+      [Number(professor_id), Number(material_id)]
+    );
+
+    await pool.query(
+      "UPDATE materiais SET quantidade = quantidade - 1 WHERE id = $1",
+      [Number(material_id)]
+    );
+
+    res.status(201).json(resultado.rows[0]);
+  } catch (erro) {
+    console.error("Erro ao registrar empréstimo:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao registrar empréstimo",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.post("/emprestimos/lote", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { professor_id, itens } = req.body;
+
+    if (!professor_id || !Array.isArray(itens) || itens.length === 0) {
+      return res.status(400).json({
+        erro: "professor_id e itens são obrigatórios",
+      });
+    }
+
+    const professorExiste = await client.query(
+      "SELECT * FROM professores WHERE id = $1",
+      [Number(professor_id)]
+    );
+
+    if (professorExiste.rows.length === 0) {
+      return res.status(404).json({ erro: "Professor não encontrado" });
+    }
+
+    const somaPorMaterial = {};
+
+    for (const item of itens) {
+      const materialId = Number(item.material_id);
+      const quantidade = Number(item.quantidade);
+
+      if (!materialId || !quantidade || quantidade < 1) {
+        return res.status(400).json({
+          erro: "Cada item deve ter material_id e quantidade válida",
+        });
+      }
+
+      somaPorMaterial[materialId] =
+        (somaPorMaterial[materialId] || 0) + quantidade;
+    }
+
+    await client.query("BEGIN");
+
+    for (const materialId of Object.keys(somaPorMaterial)) {
+      const materialResult = await client.query(
+        "SELECT * FROM materiais WHERE id = $1",
+        [Number(materialId)]
+      );
+
+      if (materialResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({
+          erro: `Material ${materialId} não encontrado`,
+        });
+      }
+
+      const material = materialResult.rows[0];
+
+      if (Number(material.quantidade) < Number(somaPorMaterial[materialId])) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          erro: `Quantidade maior que o estoque para o material ${material.nome}`,
+        });
+      }
+    }
+
+    for (const item of itens) {
+      const materialId = Number(item.material_id);
+      const quantidade = Number(item.quantidade);
+
+      for (let i = 0; i < quantidade; i++) {
+        await client.query(
+          `
+          INSERT INTO emprestimos
+          (professor_id, material_id, data_emprestimo, devolvido)
+          VALUES ($1, $2, NOW(), FALSE)
+          `,
+          [Number(professor_id), materialId]
+        );
+      }
+
+      await client.query(
+        `
+        UPDATE materiais
+        SET quantidade = quantidade - $1
+        WHERE id = $2
+        `,
+        [quantidade, materialId]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.json({ mensagem: "Empréstimo registrado com sucesso" });
+  } catch (erro) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao registrar empréstimo em lote:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao registrar empréstimo em lote",
+      detalhe: erro.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/emprestimos", async (req, res) => {
+  try {
+    const resultado = await pool.query(`
+      SELECT
+        e.id,
+        e.professor_id,
+        e.material_id,
+        p.nome AS professor_nome,
+        m.nome AS material_nome,
+        m.tipo AS material_tipo,
+        e.data_emprestimo,
+        e.devolvido
+      FROM emprestimos e
+      LEFT JOIN professores p ON p.id = e.professor_id
+      LEFT JOIN materiais m ON m.id = e.material_id
+      ORDER BY e.id DESC
+    `);
+
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error("Erro ao buscar empréstimos:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao buscar empréstimos",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.get("/emprestimos/ativos", async (req, res) => {
+  try {
+    const resultado = await pool.query(`
+      SELECT
+        e.id,
+        e.professor_id,
+        e.material_id,
+        p.nome AS professor_nome,
+        m.nome AS material_nome,
+        m.tipo AS material_tipo,
+        e.data_emprestimo,
+        e.devolvido
+      FROM emprestimos e
+      LEFT JOIN professores p ON p.id = e.professor_id
+      LEFT JOIN materiais m ON m.id = e.material_id
+      WHERE e.devolvido = FALSE
+      ORDER BY e.id DESC
+    `);
+
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error("Erro ao buscar empréstimos ativos:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao buscar empréstimos ativos",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.get("/emprestimos/ativos/resumo", async (req, res) => {
+  try {
+    const resultado = await pool.query(`
+      SELECT
+        e.professor_id,
+        p.nome AS professor_nome,
+        e.material_id,
+        m.nome AS material_nome,
+        m.tipo AS material_tipo,
+        COUNT(e.id) AS quantidade,
+        MIN(e.data_emprestimo) AS primeiro_emprestimo,
+        MAX(e.data_emprestimo) AS ultimo_emprestimo
+      FROM emprestimos e
+      INNER JOIN professores p ON p.id = e.professor_id
+      INNER JOIN materiais m ON m.id = e.material_id
+      WHERE e.devolvido = FALSE
+      GROUP BY
+        e.professor_id,
+        p.nome,
+        e.material_id,
+        m.nome,
+        m.tipo
+      ORDER BY p.nome ASC, m.nome ASC
+    `);
+
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error("Erro ao buscar resumo de empréstimos ativos:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao buscar resumo de empréstimos ativos",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.get("/professores/:id/emprestimos-ativos", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const professorExiste = await pool.query(
+      "SELECT * FROM professores WHERE id = $1",
+      [Number(id)]
+    );
+
+    if (professorExiste.rows.length === 0) {
+      return res.status(404).json({ erro: "Professor não encontrado" });
+    }
+
+    const resultado = await pool.query(
+      `
+      SELECT
+        e.professor_id,
+        p.nome AS professor_nome,
+        e.material_id,
+        m.nome AS material_nome,
+        m.tipo AS material_tipo,
+        COUNT(e.id) AS quantidade,
+        MIN(e.data_emprestimo) AS primeiro_emprestimo,
+        MAX(e.data_emprestimo) AS ultimo_emprestimo
+      FROM emprestimos e
+      INNER JOIN professores p ON p.id = e.professor_id
+      INNER JOIN materiais m ON m.id = e.material_id
+      WHERE e.devolvido = FALSE
+        AND e.professor_id = $1
+      GROUP BY
+        e.professor_id,
+        p.nome,
+        e.material_id,
+        m.nome,
+        m.tipo
+      ORDER BY m.nome ASC
+      `,
+      [Number(id)]
+    );
+
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error("Erro ao buscar empréstimos ativos do professor:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao buscar empréstimos ativos do professor",
+      detalhe: erro.message,
+    });
+  }
+});
+
+app.put("/emprestimos/devolver-lote", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        erro: "Envie uma lista de ids para devolução",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    const registros = await client.query(
+      `
+      SELECT id, material_id, devolvido
+      FROM emprestimos
+      WHERE id = ANY($1::int[])
+      `,
+      [ids]
+    );
+
+    if (registros.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ erro: "Nenhum empréstimo encontrado" });
+    }
+
+    const ativos = registros.rows.filter((item) => item.devolvido === false);
+
+    if (ativos.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        erro: "Todos os itens já foram devolvidos",
+      });
+    }
+
+    const quantidadePorMaterial = {};
+
+    for (const item of ativos) {
+      quantidadePorMaterial[item.material_id] =
+        (quantidadePorMaterial[item.material_id] || 0) + 1;
+    }
+
+    await client.query(
+      `
+      UPDATE emprestimos
+      SET devolvido = TRUE
+      WHERE id = ANY($1::int[]) AND devolvido = FALSE
+      `,
+      [ids]
+    );
+
+    for (const materialId of Object.keys(quantidadePorMaterial)) {
+      await client.query(
+        `
+        UPDATE materiais
+        SET quantidade = quantidade + $1
+        WHERE id = $2
+        `,
+        [quantidadePorMaterial[materialId], Number(materialId)]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.json({
+      mensagem: "Itens devolvidos com sucesso",
+      quantidade_devolvida: ativos.length,
+    });
+  } catch (erro) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao devolver lote:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao devolver lote",
+      detalhe: erro.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+app.put("/emprestimos/devolver-parcial", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { professor_id, material_id, quantidade } = req.body;
+
+    if (!professor_id || !material_id || !quantidade) {
+      return res.status(400).json({
+        erro: "professor_id, material_id e quantidade são obrigatórios",
+      });
+    }
+
+    if (Number(quantidade) < 1) {
+      return res.status(400).json({
+        erro: "A quantidade deve ser pelo menos 1",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    const ativos = await client.query(
+      `
+      SELECT id
+      FROM emprestimos
+      WHERE professor_id = $1
+        AND material_id = $2
+        AND devolvido = FALSE
+      ORDER BY id ASC
+      LIMIT $3
+      `,
+      [Number(professor_id), Number(material_id), Number(quantidade)]
+    );
+
+    if (ativos.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        erro: "Nenhum item ativo encontrado para devolução",
+      });
+    }
+
+    if (ativos.rows.length < Number(quantidade)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        erro: "Quantidade para devolução maior do que a quantidade emprestada",
+      });
+    }
+
+    const ids = ativos.rows.map((item) => item.id);
+
+    await client.query(
+      `
+      UPDATE emprestimos
+      SET devolvido = TRUE
+      WHERE id = ANY($1::int[])
+      `,
+      [ids]
+    );
+
+    await client.query(
+      `
+      UPDATE materiais
+      SET quantidade = quantidade + $1
+      WHERE id = $2
+      `,
+      [Number(quantidade), Number(material_id)]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      mensagem: "Devolução parcial realizada com sucesso",
+      ids_devolvidos: ids,
+    });
+  } catch (erro) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao devolver parcialmente:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao devolver parcialmente",
+      detalhe: erro.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+app.put("/emprestimos/devolver-tudo/:professor_id", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { professor_id } = req.params;
+
+    if (!professor_id) {
+      return res.status(400).json({
+        erro: "professor_id é obrigatório",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    const professorExiste = await client.query(
+      "SELECT * FROM professores WHERE id = $1",
+      [Number(professor_id)]
+    );
+
+    if (professorExiste.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ erro: "Professor não encontrado" });
+    }
+
+    const emprestimosAtivos = await client.query(
+      `
+      SELECT id, material_id
+      FROM emprestimos
+      WHERE professor_id = $1
+        AND devolvido = FALSE
+      `,
+      [Number(professor_id)]
+    );
+
+    if (emprestimosAtivos.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        erro: "Esse professor não possui itens ativos para devolução",
+      });
+    }
+
+    const quantidadePorMaterial = {};
+
+    for (const item of emprestimosAtivos.rows) {
+      quantidadePorMaterial[item.material_id] =
+        (quantidadePorMaterial[item.material_id] || 0) + 1;
+    }
+
+    await client.query(
+      `
+      UPDATE emprestimos
+      SET devolvido = TRUE
+      WHERE professor_id = $1
+        AND devolvido = FALSE
+      `,
+      [Number(professor_id)]
+    );
+
+    for (const materialId of Object.keys(quantidadePorMaterial)) {
+      await client.query(
+        `
+        UPDATE materiais
+        SET quantidade = quantidade + $1
+        WHERE id = $2
+        `,
+        [quantidadePorMaterial[materialId], Number(materialId)]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.json({
+      mensagem: "Todos os itens foram devolvidos com sucesso",
+      professor_id: Number(professor_id),
+      itens_devolvidos: emprestimosAtivos.rows.length,
+    });
+  } catch (erro) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao devolver tudo:", erro.message);
+    res.status(500).json({
+      erro: "Erro ao devolver tudo",
+      detalhe: erro.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+const PORT = 3001;
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
