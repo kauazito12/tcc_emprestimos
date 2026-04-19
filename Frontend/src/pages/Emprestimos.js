@@ -156,10 +156,12 @@ export default function Emprestimos() {
           professor_nome: item.professor_nome,
           ultima_movimentacao: item.ultimo_emprestimo,
           itens: [],
+          total_itens: 0,
         };
       }
 
       grupos[professorId].itens.push(item);
+      grupos[professorId].total_itens += Number(item.quantidade || 0);
 
       if (
         new Date(item.ultimo_emprestimo).getTime() >
@@ -313,99 +315,97 @@ export default function Emprestimos() {
 
   return (
     <div className="emprestimos-page">
-      <div className="emprestimos-container">
-        {mensagem && (
-          <div
-            className={`mensagem-topo ${
-              tipoMensagem === "erro" ? "mensagem-erro" : "mensagem-sucesso"
-            }`}
+      {mensagem && (
+        <div
+          className={`mensagem-topo ${
+            tipoMensagem === "erro" ? "mensagem-erro" : "mensagem-sucesso"
+          }`}
+        >
+          {mensagem}
+        </div>
+      )}
+
+      <section className="bloco-cadastro">
+        <h2>Novo Empréstimo</h2>
+
+        <div className="form-group">
+          <label>Professor</label>
+          <select
+            value={professorSelecionado}
+            onChange={(e) => setProfessorSelecionado(e.target.value)}
           >
-            {mensagem}
-          </div>
-        )}
-
-        <section className="bloco-cadastro">
-          <h2>Novo Empréstimo</h2>
-
-          <div className="form-group">
-            <label>Professor</label>
-            <select
-              value={professorSelecionado}
-              onChange={(e) => setProfessorSelecionado(e.target.value)}
-            >
-              <option value="">Selecione um professor</option>
-              {professores.map((professor) => (
-                <option key={professor.id} value={professor.id}>
-                  {professor.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="lista-itens-cadastro">
-            {itensNovoEmprestimo.map((item, index) => (
-              <div className="linha-item-cadastro" key={index}>
-                <select
-                  value={item.material_id}
-                  onChange={(e) =>
-                    atualizarLinhaNovoEmprestimo(index, "material_id", e.target.value)
-                  }
-                >
-                  <option value="">Selecione um material</option>
-                  {materiais.map((material) => (
-                    <option key={material.id} value={material.id}>
-                      {material.nome} ({material.quantidade} em estoque)
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantidade}
-                  onChange={(e) =>
-                    atualizarLinhaNovoEmprestimo(index, "quantidade", e.target.value)
-                  }
-                />
-
-                <button
-                  type="button"
-                  className="btn-remover"
-                  onClick={() => removerLinhaNovoEmprestimo(index)}
-                >
-                  Remover
-                </button>
-              </div>
+            <option value="">Selecione um professor</option>
+            {professores.map((professor) => (
+              <option key={professor.id} value={professor.id}>
+                {professor.nome}
+              </option>
             ))}
-          </div>
+          </select>
+        </div>
 
-          <div className="acoes-cadastro">
-            <button type="button" onClick={adicionarLinhaNovoEmprestimo}>
-              Adicionar Linha
-            </button>
+        <div className="lista-itens-cadastro">
+          {itensNovoEmprestimo.map((item, index) => (
+            <div className="linha-item-cadastro" key={index}>
+              <select
+                value={item.material_id}
+                onChange={(e) =>
+                  atualizarLinhaNovoEmprestimo(index, "material_id", e.target.value)
+                }
+              >
+                <option value="">Selecione um material</option>
+                {materiais.map((material) => (
+                  <option key={material.id} value={material.id}>
+                    {material.nome} ({material.quantidade} em estoque)
+                  </option>
+                ))}
+              </select>
 
-            <button type="button" className="btn-principal" onClick={salvarEmprestimo}>
-              Salvar Empréstimo
-            </button>
-          </div>
-        </section>
+              <input
+                type="number"
+                min="1"
+                value={item.quantidade}
+                onChange={(e) =>
+                  atualizarLinhaNovoEmprestimo(index, "quantidade", e.target.value)
+                }
+              />
 
-        <section className="bloco-emprestados">
-          <h2>Itens Emprestados</h2>
+              <button
+                type="button"
+                className="btn-remover"
+                onClick={() => removerLinhaNovoEmprestimo(index)}
+              >
+                X
+              </button>
+            </div>
+          ))}
+        </div>
 
-          {carregando ? (
-            <p>Carregando...</p>
-          ) : grupos.length === 0 ? (
-            <p>Nenhum empréstimo ativo.</p>
-          ) : (
-            grupos.map((grupo) => (
+        <div className="acoes-cadastro">
+          <button type="button" onClick={adicionarLinhaNovoEmprestimo}>
+            Adicionar Linha
+          </button>
+
+          <button type="button" className="btn-principal" onClick={salvarEmprestimo}>
+            Salvar Empréstimo
+          </button>
+        </div>
+      </section>
+
+      <section className="bloco-emprestados">
+        <h2>Itens Emprestados</h2>
+
+        {carregando ? (
+          <p>Carregando...</p>
+        ) : grupos.length === 0 ? (
+          <p>Nenhum empréstimo ativo.</p>
+        ) : (
+          <div className="grid-cards-professores">
+            {grupos.map((grupo) => (
               <div className="card-professor" key={grupo.professor_id}>
                 <div className="card-professor-topo">
-                  <div>
+                  <div className="card-professor-header-info">
                     <h3>{grupo.professor_nome}</h3>
-                    <p>
-                      Última movimentação: {formatarData(grupo.ultima_movimentacao)}
-                    </p>
+                    <p>Última movimentação: {formatarData(grupo.ultima_movimentacao)}</p>
                   </div>
 
                   <button
@@ -414,6 +414,18 @@ export default function Emprestimos() {
                   >
                     Devolver Tudo
                   </button>
+                </div>
+
+                <div className="card-resumo-professor">
+                  <div className="mini-resumo">
+                    <span>Tipos de itens</span>
+                    <strong>{grupo.itens.length}</strong>
+                  </div>
+
+                  <div className="mini-resumo">
+                    <span>Total com professor</span>
+                    <strong>{grupo.total_itens}</strong>
+                  </div>
                 </div>
 
                 <div className="lista-itens-professor">
@@ -497,10 +509,10 @@ export default function Emprestimos() {
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </section>
-      </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

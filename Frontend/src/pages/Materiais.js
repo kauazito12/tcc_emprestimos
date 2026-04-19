@@ -1,291 +1,255 @@
 import React, { useEffect, useState } from "react";
+import "./Materiais.css";
+
+const API_URL = "http://localhost:3001";
 
 function Materiais() {
+  const [materiais, setMateriais] = useState([]);
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState("");
   const [quantidade, setQuantidade] = useState("");
-  const [materiais, setMateriais] = useState([]);
   const [editandoId, setEditandoId] = useState(null);
-
-  const tiposMateriais = [
-    "Lápis",
-    "Caneta",
-    "Borracha",
-    "Cola",
-    "Régua",
-    "Caderno",
-    "Tesoura",
-    "Apontador",
-    "Papel",
-    "Giz",
-    "Tinta",
-  ];
+  const [mensagem, setMensagem] = useState("");
+  const [tipoMensagem, setTipoMensagem] = useState("");
 
   useEffect(() => {
     buscarMateriais();
   }, []);
 
-  const buscarMateriais = async () => {
+  function mostrarMensagem(texto, tipoMsg = "sucesso") {
+    setMensagem(texto);
+    setTipoMensagem(tipoMsg);
+
+    setTimeout(() => {
+      setMensagem("");
+      setTipoMensagem("");
+    }, 3000);
+  }
+
+  async function buscarMateriais() {
     try {
-      const resposta = await fetch("http://localhost:3001/materiais");
-
-      if (!resposta.ok) {
-        throw new Error("Erro ao buscar materiais");
-      }
-
+      const resposta = await fetch(`${API_URL}/materiais`);
       const dados = await resposta.json();
-      setMateriais(dados);
-    } catch (error) {
-      console.error("Erro ao buscar materiais:", error);
-      alert("Erro ao carregar materiais.");
-    }
-  };
-
-  const salvarMaterial = async (e) => {
-    e.preventDefault();
-
-    if (!nome.trim() || !tipo || !quantidade) {
-      alert("Preencha todos os campos.");
-      return;
-    }
-
-    const material = {
-      nome: nome.trim(),
-      tipo: tipo,
-      quantidade: Number(quantidade),
-    };
-
-    console.log("Enviando material:", material);
-
-    try {
-      let resposta;
-
-      if (editandoId) {
-        resposta = await fetch(`http://localhost:3001/materiais/${editandoId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(material),
-        });
-      } else {
-        resposta = await fetch("http://localhost:3001/materiais", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(material),
-        });
-      }
 
       if (!resposta.ok) {
-        const erroTexto = await resposta.text();
-        console.error("Erro do backend:", erroTexto);
-        alert("Erro ao salvar material. Veja o console.");
+        mostrarMensagem(dados.erro || "Erro ao buscar materiais", "erro");
         return;
       }
 
-      limparFormulario();
-      await buscarMateriais();
-
-      alert(editandoId ? "Material atualizado com sucesso!" : "Material cadastrado com sucesso!");
+      setMateriais(dados);
     } catch (error) {
-      console.error("Erro ao salvar material:", error);
-      alert("Erro ao salvar material.");
+      console.error(error);
+      mostrarMensagem("Erro ao buscar materiais", "erro");
     }
-  };
+  }
 
-  const editarMaterial = (material) => {
-    setNome(material.nome);
-    setTipo(material.tipo);
-    setQuantidade(material.quantidade);
-    setEditandoId(material.id);
-  };
-
-  const excluirMaterial = async (id) => {
-    const confirmar = window.confirm("Deseja realmente excluir este material?");
-    if (!confirmar) return;
-
-    try {
-      const resposta = await fetch(`http://localhost:3001/materiais/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!resposta.ok) {
-        throw new Error("Erro ao excluir material");
-      }
-
-      await buscarMateriais();
-      alert("Material excluído com sucesso!");
-    } catch (error) {
-      console.error("Erro ao excluir material:", error);
-      alert("Erro ao excluir material.");
-    }
-  };
-
-  const limparFormulario = () => {
+  function limparFormulario() {
     setNome("");
     setTipo("");
     setQuantidade("");
     setEditandoId(null);
-  };
+  }
+
+  async function salvarMaterial(e) {
+    e.preventDefault();
+
+    if (!nome.trim() || !tipo.trim() || quantidade === "") {
+      mostrarMensagem("Preencha nome, tipo e quantidade", "erro");
+      return;
+    }
+
+    try {
+      let resposta;
+
+      const body = JSON.stringify({
+        nome,
+        tipo,
+        quantidade: Number(quantidade),
+      });
+
+      if (editandoId) {
+        resposta = await fetch(`${API_URL}/materiais/${editandoId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body,
+        });
+      } else {
+        resposta = await fetch(`${API_URL}/materiais`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        });
+      }
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        mostrarMensagem(dados.erro || "Erro ao salvar material", "erro");
+        return;
+      }
+
+      mostrarMensagem(
+        editandoId
+          ? "Material atualizado com sucesso"
+          : "Material cadastrado com sucesso",
+        "sucesso"
+      );
+
+      limparFormulario();
+      buscarMateriais();
+    } catch (error) {
+      console.error(error);
+      mostrarMensagem("Erro ao salvar material", "erro");
+    }
+  }
+
+  function editarMaterial(material) {
+    setNome(material.nome || "");
+    setTipo(material.tipo || "");
+    setQuantidade(material.quantidade ?? "");
+    setEditandoId(material.id);
+  }
+
+  async function excluirMaterial(id) {
+    try {
+      const resposta = await fetch(`${API_URL}/materiais/${id}`, {
+        method: "DELETE",
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        mostrarMensagem(dados.erro || "Erro ao excluir material", "erro");
+        return;
+      }
+
+      mostrarMensagem("Material excluído com sucesso", "sucesso");
+
+      if (editandoId === id) {
+        limparFormulario();
+      }
+
+      buscarMateriais();
+    } catch (error) {
+      console.error(error);
+      mostrarMensagem("Erro ao excluir material", "erro");
+    }
+  }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#4b4f58",
-        padding: "30px",
-        color: "#000",
-      }}
-    >
-      <h1 style={{ fontSize: "48px", marginBottom: "30px" }}>
-        Gerenciamento de Materiais
-      </h1>
-
-      <form
-        onSubmit={salvarMaterial}
-        style={{
-          display: "flex",
-          gap: "10px",
-          alignItems: "center",
-          flexWrap: "wrap",
-          marginBottom: "30px",
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Nome do material"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          style={{
-            padding: "8px",
-            width: "180px",
-          }}
-        />
-
-        <select
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
-          style={{
-            padding: "8px",
-            width: "180px",
-          }}
+    <div className="materiais-page">
+      {mensagem && (
+        <div
+          className={`mensagem-topo ${
+            tipoMensagem === "erro" ? "mensagem-erro" : "mensagem-sucesso"
+          }`}
         >
-          <option value="">Selecione o tipo</option>
-          {tiposMateriais.map((item, index) => (
-            <option key={index} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+          {mensagem}
+        </div>
+      )}
 
-        <input
-          type="number"
-          placeholder="Quantidade"
-          value={quantidade}
-          onChange={(e) => setQuantidade(e.target.value)}
-          style={{
-            padding: "8px",
-            width: "150px",
-          }}
-        />
+      <div className="materiais-card">
+        <h2>Gerenciamento de Materiais</h2>
 
-        <button
-          type="submit"
-          style={{
-            padding: "8px 14px",
-            cursor: "pointer",
-          }}
-        >
-          {editandoId ? "Atualizar Material" : "Adicionar Item"}
-        </button>
+        <form className="materiais-form" onSubmit={salvarMaterial}>
+          <input
+            type="text"
+            placeholder="Nome do material"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+          />
+
+          <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+            <option value="">Selecione o tipo</option>
+            <option value="Lápis">Lápis</option>
+            <option value="Caneta">Caneta</option>
+            <option value="Borracha">Borracha</option>
+            <option value="Giz">Giz</option>
+            <option value="Tesoura">Tesoura</option>
+            <option value="Tinta">Tinta</option>
+            <option value="Tablet">Tablet</option>
+            <option value="Notebook">Notebook</option>
+            <option value="Outro">Outro</option>
+          </select>
+
+          <input
+            type="number"
+            placeholder="Quantidade"
+            value={quantidade}
+            onChange={(e) => setQuantidade(e.target.value)}
+          />
+
+          <button type="submit">
+            {editandoId ? "Atualizar Item" : "Adicionar Item"}
+          </button>
+        </form>
+      </div>
+
+      <div className="materiais-card">
+        <h2>Materiais Cadastrados</h2>
+
+        {materiais.length === 0 ? (
+          <p className="texto-vazio">Nenhum material cadastrado.</p>
+        ) : (
+          <div className="tabela-wrapper">
+            <table className="tabela-materiais">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Quantidade</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materiais.map((material) => (
+                  <tr key={material.id}>
+                    <td>{material.id}</td>
+                    <td>{material.nome}</td>
+                    <td>{material.tipo}</td>
+                    <td>{material.quantidade}</td>
+                    <td>
+                      <div className="acoes-linha">
+                        <button onClick={() => editarMaterial(material)}>
+                          Editar
+                        </button>
+                        <button
+                          className="btn-excluir"
+                          onClick={() => excluirMaterial(material.id)}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {editandoId && (
-          <button
-            type="button"
-            onClick={limparFormulario}
-            style={{
-              padding: "8px 14px",
-              cursor: "pointer",
-            }}
-          >
-            Cancelar
-          </button>
+          <div style={{ textAlign: "center", marginTop: "12px" }}>
+            <button
+              onClick={limparFormulario}
+              style={{
+                height: "38px",
+                border: "1px solid #999",
+                borderRadius: "6px",
+                background: "white",
+                cursor: "pointer",
+                padding: "0 14px",
+                fontSize: "13px",
+              }}
+            >
+              Cancelar edição
+            </button>
+          </div>
         )}
-      </form>
-
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          backgroundColor: "#fff",
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={estiloTh}>ID</th>
-            <th style={estiloTh}>Nome</th>
-            <th style={estiloTh}>Tipo</th>
-            <th style={estiloTh}>Quantidade</th>
-            <th style={estiloTh}>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {materiais.length > 0 ? (
-            materiais.map((material) => (
-              <tr key={material.id}>
-                <td style={estiloTd}>{material.id}</td>
-                <td style={estiloTd}>{material.nome}</td>
-                <td style={estiloTd}>{material.tipo}</td>
-                <td style={estiloTd}>{material.quantidade}</td>
-                <td style={estiloTd}>
-                  <button
-                    onClick={() => editarMaterial(material)}
-                    style={{
-                      marginRight: "8px",
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Editar
-                  </button>
-
-                  <button
-                    onClick={() => excluirMaterial(material.id)}
-                    style={{
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Excluir
-                  </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td style={estiloTd} colSpan="5">
-                Nenhum material cadastrado.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      </div>
     </div>
   );
 }
-
-const estiloTh = {
-  border: "1px solid #ccc",
-  padding: "12px",
-  textAlign: "left",
-  backgroundColor: "#e9e9e9",
-};
-
-const estiloTd = {
-  border: "1px solid #ccc",
-  padding: "12px",
-};
 
 export default Materiais;
