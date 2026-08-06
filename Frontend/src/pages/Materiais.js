@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./Materiais.css";
 
-const API_URL = "http://localhost:3001";
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:3001";
 
 function Materiais() {
   const [materiais, setMateriais] = useState([]);

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./Emprestimos.css";
 
-const API_URL = "http://localhost:3001";
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:3001";
 
 function formatarData(data) {
   if (!data) return "-";
