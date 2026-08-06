@@ -2,117 +2,323 @@
   width: 100%;
 }
 
-.mensagem-topo {
+/* =========================================================
+   MENSAGENS
+========================================================= */
+
+.materiais-page .mensagem-topo {
   width: 100%;
-  margin-bottom: 18px;
-  padding: 14px 16px;
+  margin-bottom: 20px;
+  padding: 13px 15px;
+  border: 1px solid;
   border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
+  box-sizing: border-box;
+  box-shadow: var(--sombra-leve);
+}
+
+.materiais-page .mensagem-sucesso {
+  background: var(--verde-50);
+  color: var(--verde-800);
+  border-color: #cce5d4;
+}
+
+.materiais-page .mensagem-erro {
+  background: var(--erro-fundo);
+  color: var(--erro);
+  border-color: #f2c7c2;
+}
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+.materiais-card {
+  position: relative;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  box-shadow: var(--sombra-leve);
   box-sizing: border-box;
 }
 
-.mensagem-sucesso {
-  background: #dff6e4;
-  color: #1f6b35;
-  border: 1px solid #9ed8ab;
+.materiais-card:first-of-type {
+  border-top: 4px solid var(--azul-700);
 }
 
-.mensagem-erro {
-  background: #fde3e3;
-  color: #9b1c1c;
-  border: 1px solid #f1b1b1;
-}
-
-.materiais-card {
-  background: #efefef;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 18px;
-  border: 1px solid #d0d0d0;
+.materiais-card:last-of-type {
+  border-top: 4px solid var(--verde-700);
 }
 
 .materiais-card h2 {
-  text-align: center;
-  margin: 0 0 18px;
-  color: #000;
+  margin: 0 0 22px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto);
   font-size: 18px;
+  font-weight: 740;
+  text-align: left;
+  letter-spacing: -0.02em;
 }
+
+.materiais-card:first-of-type h2::before {
+  content: "CONTROLE DE ESTOQUE";
+  display: block;
+  margin-bottom: 6px;
+  color: var(--azul-700);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.materiais-card:last-of-type h2::before {
+  content: "MATERIAIS REGISTRADOS";
+  display: block;
+  margin-bottom: 6px;
+  color: var(--verde-700);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+/* =========================================================
+   FORMULÁRIO
+========================================================= */
 
 .materiais-form {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 0.9fr auto;
-  gap: 10px;
+  grid-template-columns: 1.4fr 1fr 0.65fr auto;
+  gap: 12px;
   align-items: end;
 }
 
 .materiais-form input,
 .materiais-form select {
-  height: 42px;
-  border: 1px solid #bdbdbd;
-  border-radius: 6px;
-  padding: 0 12px;
-  font-size: 14px;
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+  background: var(--branco);
+  border: 1px solid var(--borda-forte);
+  border-radius: 7px;
+  color: var(--texto);
+  font-size: 12px;
+  outline: none;
   box-sizing: border-box;
-  background: #fff;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.materiais-form button,
-.acoes-linha button {
-  height: 38px;
-  border: 1px solid #999;
-  border-radius: 6px;
-  background: white;
+.materiais-form input::placeholder {
+  color: #9aa7ad;
+}
+
+.materiais-form input:hover,
+.materiais-form select:hover {
+  border-color: #aebdc5;
+}
+
+.materiais-form input:focus,
+.materiais-form select:focus {
+  border-color: var(--azul-700);
+  box-shadow: 0 0 0 3px rgba(33, 100, 147, 0.1);
+}
+
+.materiais-form button {
+  height: 44px;
+  padding: 0 17px;
+  border: 1px solid var(--azul-800);
+  border-radius: 7px;
+  background: var(--azul-800);
+  color: var(--branco);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
-  padding: 0 14px;
-  font-size: 13px;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
 }
 
-.materiais-form button:hover,
-.acoes-linha button:hover {
-  background: #e7e7e7;
+.materiais-form button:hover {
+  background: var(--azul-900);
+  border-color: var(--azul-900);
 }
 
-.btn-excluir {
-  background: #fff5f5;
-}
+/* =========================================================
+   TABELA
+========================================================= */
 
-.tabela-wrapper {
+.materiais-page .tabela-wrapper {
+  width: 100%;
   overflow-x: auto;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
 }
 
 .tabela-materiais {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
-  background: white;
-}
-
-.tabela-materiais th,
-.tabela-materiais td {
-  border: 1px solid #d5d5d5;
-  padding: 12px;
-  text-align: left;
-  font-size: 14px;
+  background: var(--branco);
 }
 
 .tabela-materiais th {
-  background: #f3f3f3;
+  padding: 13px 15px;
+  background: #f7fafb;
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto-secundario);
+  font-size: 9px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.acoes-linha {
+.tabela-materiais td {
+  padding: 14px 15px;
+  border-bottom: 1px solid #e8edef;
+  color: var(--texto);
+  font-size: 11px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabela-materiais tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabela-materiais tbody tr {
+  transition: background-color 0.18s ease;
+}
+
+.tabela-materiais tbody tr:hover {
+  background: var(--azul-50);
+}
+
+.tabela-materiais th:first-child,
+.tabela-materiais td:first-child {
+  width: 55px;
+  color: var(--texto-claro);
+}
+
+.tabela-materiais th:nth-child(4),
+.tabela-materiais td:nth-child(4) {
+  width: 120px;
+}
+
+.tabela-materiais th:last-child,
+.tabela-materiais td:last-child {
+  width: 190px;
+}
+
+/* =========================================================
+   BOTÕES DA TABELA
+========================================================= */
+
+.materiais-page .acoes-linha {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.texto-vazio {
-  text-align: center;
-  color: #333;
-  margin: 0;
+.materiais-page .acoes-linha button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #b8c9d3;
+  border-radius: 7px;
+  background: var(--branco);
+  color: var(--azul-800);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
-@media (max-width: 900px) {
+.materiais-page .acoes-linha button:hover {
+  background: var(--azul-50);
+  border-color: var(--azul-700);
+}
+
+.materiais-page .acoes-linha .btn-excluir {
+  background: var(--branco);
+  border-color: #e0b5b0;
+  color: #a4362c;
+}
+
+.materiais-page .acoes-linha .btn-excluir:hover {
+  background: #fff2f0;
+  border-color: #c76b62;
+}
+
+.materiais-page button:active {
+  transform: translateY(1px);
+}
+
+/* Botão antigo de cancelar que está com estilo dentro do JS */
+.materiais-card > div[style] button {
+  min-height: 38px !important;
+  padding: 0 15px !important;
+  background: var(--branco) !important;
+  border: 1px solid var(--borda-forte) !important;
+  border-radius: 7px !important;
+  color: var(--texto-secundario) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.materiais-card > div[style] button:hover {
+  background: #f4f7f8 !important;
+  color: var(--texto) !important;
+}
+
+/* =========================================================
+   LISTA VAZIA
+========================================================= */
+
+.materiais-page .texto-vazio {
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 1px dashed var(--borda-forte);
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: var(--texto-claro);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+========================================================= */
+
+@media (max-width: 1000px) {
+  .materiais-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .materiais-form button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 650px) {
   .materiais-form {
     grid-template-columns: 1fr;
+  }
+
+  .materiais-card {
+    padding: 17px;
   }
 }

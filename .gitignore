@@ -1,0 +1,18 @@
+# Dependências
+Backend/node_modules/
+Frontend/node_modules/
+
+# Variáveis de ambiente
+Backend/.env
+Frontend/.env
+.env
+
+# Builds
+Frontend/build/
+
+# Arquivos compactados
+*.zip
+
+# Logs
+*.log
+npm-debug.log*

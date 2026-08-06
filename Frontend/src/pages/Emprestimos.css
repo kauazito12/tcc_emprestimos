@@ -2,72 +2,131 @@
   width: 100%;
 }
 
-.mensagem-topo {
+/* =========================================================
+   MENSAGENS
+========================================================= */
+
+.emprestimos-page .mensagem-topo {
   width: 100%;
-  margin-bottom: 18px;
-  padding: 14px 16px;
+  margin-bottom: 20px;
+  padding: 13px 15px;
+  border: 1px solid;
   border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
   box-sizing: border-box;
+  box-shadow: var(--sombra-leve);
 }
 
-.mensagem-sucesso {
-  background: #dff6e4;
-  color: #1f6b35;
-  border: 1px solid #9ed8ab;
+.emprestimos-page .mensagem-sucesso {
+  background: var(--verde-50);
+  color: var(--verde-800);
+  border-color: #cce5d4;
 }
 
-.mensagem-erro {
-  background: #fde3e3;
-  color: #9b1c1c;
-  border: 1px solid #f1b1b1;
+.emprestimos-page .mensagem-erro {
+  background: var(--erro-fundo);
+  color: var(--erro);
+  border-color: #f2c7c2;
 }
+
+/* =========================================================
+   BLOCOS PRINCIPAIS
+========================================================= */
 
 .bloco-cadastro,
 .bloco-emprestados {
-  background: #efefef;
+  position: relative;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--branco);
+  border: 1px solid var(--borda);
   border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 18px;
+  box-shadow: var(--sombra-leve);
   box-sizing: border-box;
-  border: 1px solid #d0d0d0;
 }
 
-.bloco-cadastro h2,
-.bloco-emprestados h2 {
-  text-align: center;
-  margin: 0 0 18px;
+.bloco-cadastro {
+  border-top: 4px solid var(--azul-700);
+}
+
+.bloco-emprestados {
+  border-top: 4px solid var(--verde-700);
+}
+
+.bloco-cadastro > h2,
+.bloco-emprestados > h2 {
+  margin: 0 0 22px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto);
   font-size: 18px;
-  color: #000;
+  font-weight: 740;
+  text-align: left;
+  letter-spacing: -0.02em;
 }
 
-.form-group {
+.bloco-cadastro > h2::before {
+  content: "REGISTRO DE SAÍDA";
+  display: block;
+  margin-bottom: 6px;
+  color: var(--azul-700);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.bloco-emprestados > h2::before {
+  content: "CONTROLE DE DEVOLUÇÕES";
+  display: block;
+  margin-bottom: 6px;
+  color: var(--verde-700);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+/* =========================================================
+   PROFESSOR
+========================================================= */
+
+.emprestimos-page .form-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 14px;
+  margin-bottom: 15px;
 }
 
-.form-group label {
-  font-weight: bold;
+.emprestimos-page .form-group label {
   margin-bottom: 7px;
-  font-size: 14px;
+  color: var(--texto);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.form-group select,
-.linha-item-cadastro select,
-.linha-item-cadastro input,
-.item-acoes input,
-.adicionar-mais-itens-linha select,
-.adicionar-mais-itens-linha input {
-  height: 42px;
-  border: 1px solid #bdbdbd;
-  border-radius: 6px;
-  padding: 0 12px;
-  font-size: 14px;
+.emprestimos-page .form-group select {
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+  background: var(--branco);
+  border: 1px solid var(--borda-forte);
+  border-radius: 7px;
+  color: var(--texto);
+  font-size: 12px;
+  outline: none;
   box-sizing: border-box;
-  background: #fff;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
+
+.emprestimos-page .form-group select:focus {
+  border-color: var(--azul-700);
+  box-shadow: 0 0 0 3px rgba(33, 100, 147, 0.1);
+}
+
+/* =========================================================
+   LINHAS DO NOVO EMPRÉSTIMO
+========================================================= */
 
 .lista-itens-cadastro {
   display: flex;
@@ -77,155 +136,246 @@
 
 .linha-item-cadastro {
   display: grid;
-  grid-template-columns: 1fr 90px 90px;
+  grid-template-columns: minmax(0, 1fr) 100px 44px;
   gap: 10px;
+  padding: 12px;
+  background: #f8fafb;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
 }
+
+.linha-item-cadastro select,
+.linha-item-cadastro input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  background: var(--branco);
+  border: 1px solid var(--borda-forte);
+  border-radius: 7px;
+  color: var(--texto);
+  font-size: 12px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.linha-item-cadastro select:focus,
+.linha-item-cadastro input:focus {
+  border-color: var(--azul-700);
+  box-shadow: 0 0 0 3px rgba(33, 100, 147, 0.1);
+}
+
+.btn-remover {
+  width: 44px;
+  height: 42px;
+  padding: 0;
+  background: var(--branco);
+  border: 1px solid #e0b5b0;
+  border-radius: 7px;
+  color: #a4362c;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-remover:hover {
+  background: #fff2f0;
+  border-color: #c76b62;
+}
+
+/* =========================================================
+   AÇÕES DE CADASTRO
+========================================================= */
 
 .acoes-cadastro {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  justify-content: center;
   margin-top: 16px;
-  flex-wrap: wrap;
 }
 
-.acoes-cadastro button,
-.item-acoes button,
-.adicionar-mais-itens-linha button,
-.btn-devolver-tudo,
-.btn-remover {
-  height: 38px;
-  border: 1px solid #999;
-  border-radius: 6px;
-  background: white;
+.acoes-cadastro button {
+  min-height: 40px;
+  padding: 0 15px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 0 14px;
-  font-size: 13px;
-  transition: 0.2s;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
-.acoes-cadastro button:hover,
-.item-acoes button:hover,
-.adicionar-mais-itens-linha button:hover,
-.btn-devolver-tudo:hover,
-.btn-remover:hover {
-  background: #e7e7e7;
+.acoes-cadastro button:first-child {
+  background: var(--branco);
+  border: 1px solid var(--borda-forte);
+  color: var(--texto-secundario);
 }
 
-.btn-principal {
-  font-weight: bold;
+.acoes-cadastro button:first-child:hover {
+  background: #f4f7f8;
+  color: var(--texto);
 }
 
-/* volta para lista */
+.acoes-cadastro .btn-principal {
+  background: var(--azul-800);
+  border: 1px solid var(--azul-800);
+  color: var(--branco);
+}
+
+.acoes-cadastro .btn-principal:hover {
+  background: var(--azul-900);
+  border-color: var(--azul-900);
+}
+
+/* =========================================================
+   MENSAGEM SEM EMPRÉSTIMOS
+========================================================= */
+
+.bloco-emprestados > p {
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 1px dashed var(--borda-forte);
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: var(--texto-claro);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* =========================================================
+   LISTA DE PROFESSORES
+========================================================= */
+
 .grid-cards-professores {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* card principal do professor */
 .card-professor {
-  border-radius: 10px;
-  padding: 14px;
-  border: 1px solid #cfcfcf;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   position: relative;
-}
-
-/* alternância leve de cor para facilitar leitura */
-.grid-cards-professores .card-professor:nth-child(odd) {
-  background: #f8f8f8;
-  border-left: 6px solid #6aa9ff;
+  padding: 20px;
+  background: #fbfcfd;
+  border: 1px solid var(--borda);
+  border-left: 4px solid var(--azul-700);
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(31, 61, 81, 0.04);
 }
 
 .grid-cards-professores .card-professor:nth-child(even) {
-  background: #fffaf4;
-  border-left: 6px solid #ffb37a;
+  border-left-color: var(--verde-700);
 }
 
 .card-professor-topo {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #dddddd;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--borda);
 }
 
 .card-professor-header-info h3 {
-  margin: 0 0 6px 0;
-  font-size: 20px;
-  color: #000;
+  margin: 0;
+  color: var(--texto);
+  font-size: 16px;
+  font-weight: 750;
 }
 
 .card-professor-header-info p {
-  margin: 0;
-  color: #444;
-  font-size: 12px;
+  margin: 5px 0 0;
+  color: var(--texto-claro);
+  font-size: 10px;
 }
 
 .btn-devolver-tudo {
-  font-weight: bold;
-  white-space: nowrap;
-  background: #ffffff;
+  min-height: 38px;
+  padding: 0 14px;
+  background: var(--verde-700);
+  border: 1px solid var(--verde-700);
+  border-radius: 7px;
+  color: var(--branco);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-/* resumo do professor */
+.btn-devolver-tudo:hover {
+  background: var(--verde-800);
+  border-color: var(--verde-800);
+}
+
+/* =========================================================
+   RESUMO DO PROFESSOR
+========================================================= */
+
 .card-resumo-professor {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
+  grid-template-columns: repeat(2, minmax(0, 180px));
+  gap: 12px;
+  margin: 16px 0;
 }
 
 .mini-resumo {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid #d8d8d8;
-  border-radius: 8px;
-  padding: 10px;
-  text-align: center;
+  padding: 12px;
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 7px;
 }
 
 .mini-resumo span {
   display: block;
-  font-size: 12px;
-  color: #555;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  color: var(--texto-claro);
+  font-size: 8px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .mini-resumo strong {
+  color: var(--texto);
   font-size: 18px;
-  color: #000;
+  font-weight: 760;
 }
+
+/* =========================================================
+   ITENS DO PROFESSOR
+========================================================= */
 
 .lista-itens-professor {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .item-professor {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 14px;
-  border: 1px solid #d7d7d7;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px;
+  background: var(--branco);
+  border: 1px solid var(--borda);
   border-radius: 8px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.75);
-  flex-wrap: wrap;
 }
 
 .item-info strong {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 14px;
+  color: var(--texto);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .item-info p {
-  margin: 0;
-  font-size: 13px;
+  margin: 4px 0 0;
+  color: var(--texto-claro);
+  font-size: 10px;
 }
 
 .item-acoes {
@@ -235,49 +385,187 @@
 }
 
 .item-acoes input {
-  width: 68px;
+  width: 76px;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--branco);
+  border: 1px solid var(--borda-forte);
+  border-radius: 7px;
+  color: var(--texto);
+  font-size: 11px;
+  outline: none;
+  box-sizing: border-box;
 }
+
+.item-acoes input:focus {
+  border-color: var(--azul-700);
+  box-shadow: 0 0 0 3px rgba(33, 100, 147, 0.1);
+}
+
+.item-acoes button {
+  min-height: 36px;
+  padding: 0 13px;
+  background: var(--branco);
+  border: 1px solid var(--verde-700);
+  border-radius: 7px;
+  color: var(--verde-800);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.item-acoes button:hover {
+  background: var(--verde-50);
+}
+
+/* =========================================================
+   ADICIONAR MAIS ITENS
+========================================================= */
 
 .adicionar-mais-itens {
   margin-top: 16px;
-  border-top: 1px solid #d0d0d0;
   padding-top: 16px;
+  border-top: 1px solid var(--borda);
 }
 
 .adicionar-mais-itens h4 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 14px;
+  margin: 0 0 11px;
+  color: var(--texto-secundario);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .adicionar-mais-itens-linha {
   display: grid;
-  grid-template-columns: 1fr 80px 90px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 90px auto;
+  gap: 9px;
 }
 
-@media (max-width: 768px) {
-  .linha-item-cadastro,
-  .adicionar-mais-itens-linha,
-  .card-resumo-professor {
-    grid-template-columns: 1fr;
-  }
+.adicionar-mais-itens-linha select,
+.adicionar-mais-itens-linha input {
+  width: 100%;
+  height: 40px;
+  padding: 0 11px;
+  background: var(--branco);
+  border: 1px solid var(--borda-forte);
+  border-radius: 7px;
+  color: var(--texto);
+  font-size: 11px;
+  outline: none;
+  box-sizing: border-box;
+}
 
-  .item-professor {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.adicionar-mais-itens-linha select:focus,
+.adicionar-mais-itens-linha input:focus {
+  border-color: var(--azul-700);
+  box-shadow: 0 0 0 3px rgba(33, 100, 147, 0.1);
+}
 
-  .item-acoes {
-    justify-content: flex-start;
+.adicionar-mais-itens-linha button {
+  min-height: 40px;
+  padding: 0 15px;
+  background: var(--azul-800);
+  border: 1px solid var(--azul-800);
+  border-radius: 7px;
+  color: var(--branco);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.adicionar-mais-itens-linha button:hover {
+  background: var(--azul-900);
+  border-color: var(--azul-900);
+}
+
+.emprestimos-page button {
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.emprestimos-page button:active {
+  transform: translateY(1px);
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+========================================================= */
+
+@media (max-width: 760px) {
+  .linha-item-cadastro {
+    grid-template-columns: 1fr 90px 44px;
   }
 
   .card-professor-topo {
     flex-direction: column;
-    align-items: flex-start;
   }
 
   .btn-devolver-tudo {
     width: 100%;
+  }
+
+  .item-professor {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .item-acoes {
+    width: 100%;
+  }
+
+  .item-acoes input {
+    flex: 1;
+  }
+
+  .adicionar-mais-itens-linha {
+    grid-template-columns: 1fr 90px;
+  }
+
+  .adicionar-mais-itens-linha button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .bloco-cadastro,
+  .bloco-emprestados {
+    padding: 17px;
+  }
+
+  .linha-item-cadastro {
+    grid-template-columns: 1fr 70px;
+  }
+
+  .linha-item-cadastro .btn-remover {
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .acoes-cadastro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .acoes-cadastro button {
+    width: 100%;
+  }
+
+  .card-professor {
+    padding: 15px;
+  }
+
+  .card-resumo-professor {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .adicionar-mais-itens-linha {
+    grid-template-columns: 1fr;
+  }
+
+  .adicionar-mais-itens-linha button {
+    grid-column: auto;
   }
 }

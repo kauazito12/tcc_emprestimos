@@ -1,16 +1,20 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
+
+require("./notificacoes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-console.log("SERVER CERTO INICIADO");
+console.log("SERVIDOR RODANDO");
 
 app.get("/", (req, res) => {
-  res.send("Backend funcionando");
+  res.send("BACKEND ON");
 });
 
 
@@ -123,43 +127,92 @@ app.put("/professores/:id", async (req, res) => {
 });
 
 app.delete("/professores/:id", async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const { id } = req.params;
+    const professorId = Number(id);
 
-    const emprestimosAtivos = await pool.query(
-      `
-      SELECT id
-      FROM emprestimos
-      WHERE professor_id = $1 AND devolvido = FALSE
-      `,
-      [id]
-    );
-
-    if (emprestimosAtivos.rows.length > 0) {
+    if (!professorId) {
       return res.status(400).json({
-        erro: "Não é possível excluir professor com empréstimos ativos",
+        erro: "ID do professor inválido",
       });
     }
 
-    const resultado = await pool.query(
-      "DELETE FROM professores WHERE id = $1 RETURNING *",
-      [id]
+    await client.query("BEGIN");
+
+    const professorExiste = await client.query(
+      "SELECT id FROM professores WHERE id = $1",
+      [professorId]
     );
 
-    if (resultado.rows.length === 0) {
-      return res.status(404).json({ erro: "Professor não encontrado" });
+    if (professorExiste.rows.length === 0) {
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        erro: "Professor não encontrado",
+      });
     }
 
-    res.json({ mensagem: "Professor excluído com sucesso" });
+    /*
+      Localiza empréstimos ainda ativos para devolver
+      as quantidades ao estoque antes da exclusão.
+    */
+    const emprestimosAtivos = await client.query(
+      `
+      SELECT material_id, COUNT(*)::INTEGER AS quantidade
+      FROM emprestimos
+      WHERE professor_id = $1
+        AND devolvido = FALSE
+      GROUP BY material_id
+      `,
+      [professorId]
+    );
+
+    for (const item of emprestimosAtivos.rows) {
+      await client.query(
+        `
+        UPDATE materiais
+        SET quantidade = quantidade + $1
+        WHERE id = $2
+        `,
+        [Number(item.quantidade), Number(item.material_id)]
+      );
+    }
+
+    /*
+      Remove o histórico de empréstimos relacionado
+      ao professor para evitar erro de chave estrangeira.
+    */
+    await client.query(
+      "DELETE FROM emprestimos WHERE professor_id = $1",
+      [professorId]
+    );
+
+    const resultado = await client.query(
+      "DELETE FROM professores WHERE id = $1 RETURNING *",
+      [professorId]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      mensagem: "Professor excluído com sucesso",
+      professor: resultado.rows[0],
+    });
   } catch (erro) {
+    await client.query("ROLLBACK");
+
     console.error("Erro ao excluir professor:", erro.message);
+
     res.status(500).json({
       erro: "Erro ao excluir professor",
       detalhe: erro.message,
     });
+  } finally {
+    client.release();
   }
 });
-
 
 // Cadastrar/ editar materiais
 
@@ -246,40 +299,64 @@ app.put("/materiais/:id", async (req, res) => {
 });
 
 app.delete("/materiais/:id", async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const { id } = req.params;
+    const materialId = Number(id);
 
-    const emprestimosAtivos = await pool.query(
-      `
-      SELECT id
-      FROM emprestimos
-      WHERE material_id = $1 AND devolvido = FALSE
-      `,
-      [id]
-    );
-
-    if (emprestimosAtivos.rows.length > 0) {
+    if (!materialId) {
       return res.status(400).json({
-        erro: "Não é possível excluir material com empréstimos ativos",
+        erro: "ID do material inválido",
       });
     }
 
-    const resultado = await pool.query(
-      "DELETE FROM materiais WHERE id = $1 RETURNING *",
-      [id]
+    await client.query("BEGIN");
+
+    const materialExiste = await client.query(
+      "SELECT id FROM materiais WHERE id = $1",
+      [materialId]
     );
 
-    if (resultado.rows.length === 0) {
-      return res.status(404).json({ erro: "Material não encontrado" });
+    if (materialExiste.rows.length === 0) {
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        erro: "Material não encontrado",
+      });
     }
 
-    res.json({ mensagem: "Material excluído com sucesso" });
+    /*
+      Remove todos os registros de empréstimos
+      ligados ao material.
+    */
+    await client.query(
+      "DELETE FROM emprestimos WHERE material_id = $1",
+      [materialId]
+    );
+
+    const resultado = await client.query(
+      "DELETE FROM materiais WHERE id = $1 RETURNING *",
+      [materialId]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      mensagem: "Material excluído com sucesso",
+      material: resultado.rows[0],
+    });
   } catch (erro) {
+    await client.query("ROLLBACK");
+
     console.error("Erro ao excluir material:", erro.message);
+
     res.status(500).json({
       erro: "Erro ao excluir material",
       detalhe: erro.message,
     });
+  } finally {
+    client.release();
   }
 });
 
@@ -322,8 +399,23 @@ app.post("/emprestimos", async (req, res) => {
     const resultado = await pool.query(
       `
       INSERT INTO emprestimos
-      (professor_id, material_id, data_emprestimo, devolvido)
-      VALUES ($1, $2, NOW(), FALSE)
+      (
+        professor_id,
+        material_id,
+        data_emprestimo,
+        data_limite,
+        devolvido,
+        email_enviado
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        NOW(),
+        NOW() + INTERVAL '1 day',
+        FALSE,
+        FALSE
+      )
       RETURNING *
       `,
       [Number(professor_id), Number(material_id)]
@@ -414,8 +506,23 @@ app.post("/emprestimos/lote", async (req, res) => {
         await client.query(
           `
           INSERT INTO emprestimos
-          (professor_id, material_id, data_emprestimo, devolvido)
-          VALUES ($1, $2, NOW(), FALSE)
+          (
+            professor_id,
+            material_id,
+            data_emprestimo,
+            data_limite,
+            devolvido,
+            email_enviado
+          )
+          VALUES
+          (
+            $1,
+            $2,
+            NOW(),
+            NOW() + INTERVAL '1 day',
+            FALSE,
+            FALSE
+          )
           `,
           [Number(professor_id), materialId]
         );
@@ -843,7 +950,7 @@ app.put("/emprestimos/devolver-tudo/:professor_id", async (req, res) => {
   }
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

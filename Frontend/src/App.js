@@ -1,6 +1,6 @@
-// navegação entre pg
 import React, { useState } from "react";
 import "./App.css";
+
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Professores from "./pages/Professores";
@@ -14,26 +14,33 @@ function App() {
     switch (paginaAtual) {
       case "inicio":
         return <Home />;
+
       case "professores":
         return <Professores />;
+
       case "materiais":
         return <Materiais />;
+
       case "emprestimos":
         return <Emprestimos />;
+
       default:
         return <Home />;
     }
   }
 
   return (
-    <div className="app-page">
-      <div className="app-container">
-        <h1>Sistema de Empréstimo de Materiais</h1>
+    <div className="app-layout">
+      <Navbar
+        paginaAtual={paginaAtual}
+        setPaginaAtual={setPaginaAtual}
+      />
 
-        <Navbar setPaginaAtual={setPaginaAtual} />
-
-        <div className="conteudo-pagina">{renderizarPagina()}</div>
-      </div>
+      <main className="app-main">
+        <div className="app-main-container">
+          {renderizarPagina()}
+        </div>
+      </main>
     </div>
   );
 }

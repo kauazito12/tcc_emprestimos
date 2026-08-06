@@ -2,132 +2,334 @@
   width: 100%;
 }
 
-.mensagem-topo {
+/* =========================================================
+   MENSAGENS
+========================================================= */
+
+.professores-page .mensagem-topo {
   width: 100%;
-  margin-bottom: 18px;
-  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 13px 15px;
+  border: 1px solid;
   border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
+  box-sizing: border-box;
+  box-shadow: var(--sombra-leve);
+}
+
+.professores-page .mensagem-sucesso {
+  background: var(--verde-50);
+  color: var(--verde-800);
+  border-color: #cce5d4;
+}
+
+.professores-page .mensagem-erro {
+  background: var(--erro-fundo);
+  color: var(--erro);
+  border-color: #f2c7c2;
+}
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+.professores-card {
+  position: relative;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  box-shadow: var(--sombra-leve);
   box-sizing: border-box;
 }
 
-.mensagem-sucesso {
-  background: #dff6e4;
-  color: #1f6b35;
-  border: 1px solid #9ed8ab;
+.professores-card:first-of-type {
+  border-top: 4px solid var(--azul-700);
 }
 
-.mensagem-erro {
-  background: #fde3e3;
-  color: #9b1c1c;
-  border: 1px solid #f1b1b1;
-}
-
-.professores-card {
-  background: #efefef;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 18px;
-  border: 1px solid #d0d0d0;
+.professores-card:last-of-type {
+  border-top: 4px solid var(--verde-700);
 }
 
 .professores-card h2 {
-  text-align: center;
-  margin: 0 0 18px;
-  color: #000;
+  margin: 0 0 22px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto);
   font-size: 18px;
+  font-weight: 740;
+  letter-spacing: -0.02em;
+  text-align: left;
 }
+
+.professores-card:first-of-type h2::before {
+  content: "CADASTRO";
+  display: block;
+  margin-bottom: 6px;
+  color: var(--azul-700);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.professores-card:last-of-type h2::before {
+  content: "REGISTROS";
+  display: block;
+  margin-bottom: 6px;
+  color: var(--verde-700);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+/* =========================================================
+   FORMULÁRIO
+========================================================= */
 
 .professores-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
 }
 
-.form-group {
+.professores-form .form-group {
   display: flex;
   flex-direction: column;
+  margin: 0;
 }
 
-.form-group label {
-  font-weight: bold;
+.professores-form .form-group label {
   margin-bottom: 7px;
-  font-size: 14px;
+  color: var(--texto);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.form-group input {
-  height: 42px;
-  border: 1px solid #bdbdbd;
-  border-radius: 6px;
-  padding: 0 12px;
-  font-size: 14px;
+.professores-form .form-group input {
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+  background: #ffffff;
+  border: 1px solid var(--borda-forte);
+  border-radius: 7px;
+  color: var(--texto);
+  font-size: 12px;
+  outline: none;
   box-sizing: border-box;
-  background: #fff;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
 }
 
-.form-acoes {
+.professores-form .form-group input::placeholder {
+  color: #9aa7ad;
+}
+
+.professores-form .form-group input:hover {
+  border-color: #aebdc5;
+}
+
+.professores-form .form-group input:focus {
+  background: #ffffff;
+  border-color: var(--azul-700);
+  box-shadow: 0 0 0 3px rgba(33, 100, 147, 0.1);
+}
+
+.professores-form .form-acoes {
+  grid-column: 1 / -1;
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
-.form-acoes button,
-.acoes-linha button {
-  height: 38px;
-  border: 1px solid #999;
-  border-radius: 6px;
-  background: white;
+/* =========================================================
+   BOTÕES
+========================================================= */
+
+.professores-form .form-acoes button,
+.professores-page .acoes-linha button {
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 0 14px;
-  font-size: 13px;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
-.form-acoes button:hover,
-.acoes-linha button:hover {
-  background: #e7e7e7;
+.professores-form .form-acoes button[type="submit"] {
+  background: var(--azul-800);
+  border: 1px solid var(--azul-800);
+  color: var(--branco);
 }
 
-.btn-secundario {
-  background: #f7f7f7;
+.professores-form .form-acoes button[type="submit"]:hover {
+  background: var(--azul-900);
+  border-color: var(--azul-900);
 }
 
-.btn-excluir {
-  background: #fff5f5;
+.professores-page .btn-secundario {
+  background: var(--branco);
+  border: 1px solid var(--borda-forte);
+  color: var(--texto-secundario);
 }
 
-.tabela-wrapper {
+.professores-page .btn-secundario:hover {
+  background: #f4f7f8;
+  color: var(--texto);
+}
+
+.professores-page .acoes-linha button {
+  min-height: 34px;
+  background: var(--branco);
+  border: 1px solid #b8c9d3;
+  color: var(--azul-800);
+}
+
+.professores-page .acoes-linha button:hover {
+  background: var(--azul-50);
+  border-color: var(--azul-700);
+}
+
+.professores-page .acoes-linha .btn-excluir {
+  background: var(--branco);
+  border-color: #e0b5b0;
+  color: #a4362c;
+}
+
+.professores-page .acoes-linha .btn-excluir:hover {
+  background: #fff2f0;
+  border-color: #c76b62;
+}
+
+.professores-page button:active {
+  transform: translateY(1px);
+}
+
+/* =========================================================
+   TABELA
+========================================================= */
+
+.professores-page .tabela-wrapper {
+  width: 100%;
   overflow-x: auto;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
 }
 
 .tabela-professores {
   width: 100%;
+  min-width: 650px;
   border-collapse: collapse;
-  background: white;
-}
-
-.tabela-professores th,
-.tabela-professores td {
-  border: 1px solid #d5d5d5;
-  padding: 12px;
-  text-align: left;
-  font-size: 14px;
+  background: var(--branco);
 }
 
 .tabela-professores th {
-  background: #f3f3f3;
+  padding: 13px 15px;
+  background: #f7fafb;
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto-secundario);
+  font-size: 9px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.acoes-linha {
+.tabela-professores td {
+  padding: 14px 15px;
+  border-bottom: 1px solid #e8edef;
+  color: var(--texto);
+  font-size: 11px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabela-professores tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabela-professores tbody tr {
+  transition: background-color 0.18s ease;
+}
+
+.tabela-professores tbody tr:hover {
+  background: var(--azul-50);
+}
+
+.tabela-professores th:first-child,
+.tabela-professores td:first-child {
+  width: 55px;
+  color: var(--texto-claro);
+}
+
+.tabela-professores th:last-child,
+.tabela-professores td:last-child {
+  width: 190px;
+}
+
+.professores-page .acoes-linha {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.texto-vazio {
-  text-align: center;
-  color: #333;
+/* =========================================================
+   LISTA VAZIA
+========================================================= */
+
+.professores-page .texto-vazio {
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
+  border: 1px dashed var(--borda-forte);
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: var(--texto-claro);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+========================================================= */
+
+@media (max-width: 800px) {
+  .professores-form {
+    grid-template-columns: 1fr;
+  }
+
+  .professores-form .form-acoes {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 500px) {
+  .professores-card {
+    padding: 17px;
+  }
+
+  .professores-form .form-acoes {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .professores-form .form-acoes button {
+    width: 100%;
+  }
 }
