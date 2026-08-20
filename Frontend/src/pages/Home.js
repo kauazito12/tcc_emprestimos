@@ -1,11 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+
 import React, { useEffect, useState } from "react";
 import "./Home.css";
 
-
-
 const API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:3001";
+
+const INTERVALO_ATUALIZACAO = 5000;
 
 function formatarDataAtual() {
   const data = new Date();
@@ -37,6 +38,14 @@ function Home() {
 
   useEffect(() => {
     buscarResumoDashboard();
+
+    const intervalo = setInterval(() => {
+      buscarResumoDashboard(true);
+    }, INTERVALO_ATUALIZACAO);
+
+    return () => {
+      clearInterval(intervalo);
+    };
   }, []);
 
   function mostrarMensagem(texto, tipo = "sucesso") {
@@ -49,9 +58,11 @@ function Home() {
     }, 3000);
   }
 
-  async function buscarResumoDashboard() {
+  async function buscarResumoDashboard(silencioso = false) {
     try {
-      setCarregando(true);
+      if (!silencioso) {
+        setCarregando(true);
+      }
 
       const resposta = await fetch(
         `${API_URL}/dashboard/materiais-resumo`
@@ -60,23 +71,30 @@ function Home() {
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        mostrarMensagem(
-          dados.erro || "Erro ao carregar os dados do painel.",
-          "erro"
-        );
+        if (!silencioso) {
+          mostrarMensagem(
+            dados.erro || "Erro ao carregar os dados do painel.",
+            "erro"
+          );
+        }
+
         return;
       }
 
-      setDadosGrafico(dados);
+      setDadosGrafico(Array.isArray(dados) ? dados : []);
     } catch (error) {
       console.error(error);
 
-      mostrarMensagem(
-        "Não foi possível conectar ao servidor.",
-        "erro"
-      );
+      if (!silencioso) {
+        mostrarMensagem(
+          "Não foi possível conectar ao servidor.",
+          "erro"
+        );
+      }
     } finally {
-      setCarregando(false);
+      if (!silencioso) {
+        setCarregando(false);
+      }
     }
   }
 
@@ -215,7 +233,7 @@ function Home() {
           <button
             type="button"
             className="botao-atualizar"
-            onClick={buscarResumoDashboard}
+            onClick={() => buscarResumoDashboard()}
             disabled={carregando}
           >
             <span className={carregando ? "icone-girando" : ""}>
@@ -280,7 +298,10 @@ function Home() {
                   : 0;
 
               return (
-                <article className="grafico-item" key={item.id}>
+                <article
+                  className="grafico-item"
+                  key={item.id}
+                >
                   <div className="grafico-item-topo">
                     <div className="grafico-material">
                       <div>
