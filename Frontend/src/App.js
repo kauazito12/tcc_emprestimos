@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+
 import React, {
   useEffect,
   useRef,
@@ -35,15 +37,6 @@ const INTERVALO_MINIMO_ATIVIDADE =
 // ======================================================
 // FETCH GLOBAL AUTENTICADO
 // ======================================================
-
-/*
-  Todas as requisições feitas para o backend
-  recebem automaticamente o token de sessão.
-
-  Assim, Home, Professores, Materiais e
-  Empréstimos não precisam repetir o código
-  de Authorization em cada fetch.
-*/
 
 if (
   typeof window !== "undefined" &&
@@ -115,13 +108,6 @@ if (
         recurso,
         novasOpcoes
       );
-
-    /*
-      Se uma rota protegida responder 401,
-      a sessão local é removida imediatamente
-      e o App recebe um evento para voltar
-      para a tela de login.
-    */
 
     if (
       requisicaoParaApi &&
@@ -274,7 +260,7 @@ function App() {
 
 
   // ======================================================
-  // BLOQUEIA PÁGINA DE USUÁRIOS PARA NÃO-ADMIN
+  // BLOQUEIA USUÁRIOS PARA NÃO-ADMIN
   // ======================================================
 
   useEffect(() => {
