@@ -26,6 +26,11 @@ function Navbar({
       titulo: "Empréstimos",
       descricao: "Controle",
     },
+    {
+      id: "historico",
+      titulo: "Histórico",
+      descricao: "Últimas 48h",
+    },
   ];
 
   if (
@@ -41,34 +46,50 @@ function Navbar({
   return (
     <aside className="sidebar">
       <nav className="sidebar-menu">
+
         <span className="sidebar-menu-titulo">
           MENU PRINCIPAL
         </span>
 
-        {itensMenu.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`sidebar-item ${
-              paginaAtual === item.id
-                ? "sidebar-item-ativo"
-                : ""
-            }`}
-            onClick={() =>
-              setPaginaAtual(item.id)
-            }
-          >
-            <span className="sidebar-item-texto">
-              <strong>
-                {item.titulo}
-              </strong>
+        {itensMenu.map(
+          (item) => (
 
-              <small>
-                {item.descricao}
-              </small>
-            </span>
-          </button>
-        ))}
+            <button
+              key={item.id}
+
+              type="button"
+
+              className={`sidebar-item ${
+                paginaAtual ===
+                item.id
+                  ? "sidebar-item-ativo"
+                  : ""
+              }`}
+
+              onClick={() =>
+                setPaginaAtual(
+                  item.id
+                )
+              }
+            >
+
+              <span className="sidebar-item-texto">
+
+                <strong>
+                  {item.titulo}
+                </strong>
+
+                <small>
+                  {item.descricao}
+                </small>
+
+              </span>
+
+            </button>
+
+          )
+        )}
+
       </nav>
     </aside>
   );

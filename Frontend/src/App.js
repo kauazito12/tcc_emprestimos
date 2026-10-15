@@ -14,8 +14,10 @@ import Home from "./pages/Home";
 import Professores from "./pages/Professores";
 import Materiais from "./pages/Materiais";
 import Emprestimos from "./pages/Emprestimos";
+import Historico from "./pages/Historico";
 import Usuarios from "./pages/Usuarios";
 import Login from "./pages/Login";
+
 
 const API_URL =
   process.env.REACT_APP_API_URL ||
@@ -45,16 +47,19 @@ if (
   const fetchOriginal =
     window.fetch.bind(window);
 
+
   window.fetch = async (
     recurso,
     opcoes = {}
   ) => {
     let url = "";
 
+
     if (
       typeof recurso === "string"
     ) {
       url = recurso;
+
     } else if (
       recurso &&
       recurso.url
@@ -62,20 +67,29 @@ if (
       url = recurso.url;
     }
 
+
     const requisicaoParaApi =
-      url.startsWith(API_URL);
+      url.startsWith(
+        API_URL
+      );
+
 
     const ehLogin =
-      url.includes("/auth/login");
+      url.includes(
+        "/auth/login"
+      );
+
 
     const token =
       localStorage.getItem(
         CHAVE_TOKEN
       );
 
+
     let novasOpcoes = {
       ...opcoes,
     };
+
 
     if (
       requisicaoParaApi &&
@@ -92,10 +106,12 @@ if (
             )
         );
 
+
       headers.set(
         "Authorization",
         `Bearer ${token}`
       );
+
 
       novasOpcoes = {
         ...opcoes,
@@ -103,11 +119,13 @@ if (
       };
     }
 
+
     const resposta =
       await fetchOriginal(
         recurso,
         novasOpcoes
       );
+
 
     if (
       requisicaoParaApi &&
@@ -122,6 +140,7 @@ if (
         CHAVE_USUARIO
       );
 
+
       window.dispatchEvent(
         new Event(
           "tcc-sessao-expirada"
@@ -129,37 +148,57 @@ if (
       );
     }
 
+
     return resposta;
   };
+
 
   window.__TCC_FETCH_AUTENTICADO__ =
     true;
 }
 
 
+// ======================================================
+// APP
+// ======================================================
+
 function App() {
   const [
     paginaAtual,
     setPaginaAtual,
-  ] = useState("inicio");
+  ] = useState(
+    "inicio"
+  );
+
 
   const [
     autenticado,
     setAutenticado,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
+
 
   const [
     verificandoSessao,
     setVerificandoSessao,
-  ] = useState(true);
+  ] = useState(
+    true
+  );
+
 
   const [
     usuarioLogado,
     setUsuarioLogado,
-  ] = useState(null);
+  ] = useState(
+    null
+  );
+
 
   const ultimaAtividadeEnviadaRef =
-    useRef(0);
+    useRef(
+      0
+    );
 
 
   // ======================================================
@@ -180,10 +219,12 @@ function App() {
       limparSessao();
     }
 
+
     window.addEventListener(
       "tcc-sessao-expirada",
       sessaoExpirada
     );
+
 
     return () => {
       window.removeEventListener(
@@ -203,6 +244,7 @@ function App() {
       return;
     }
 
+
     const eventos = [
       "mousedown",
       "keydown",
@@ -210,9 +252,11 @@ function App() {
       "scroll",
     ];
 
+
     function registrarInteracao() {
       registrarAtividade();
     }
+
 
     eventos.forEach(
       (evento) => {
@@ -220,11 +264,13 @@ function App() {
           evento,
           registrarInteracao,
           {
-            passive: true,
+            passive:
+              true,
           }
         );
       }
     );
+
 
     return () => {
       eventos.forEach(
@@ -236,7 +282,9 @@ function App() {
         }
       );
     };
-  }, [autenticado]);
+  }, [
+    autenticado,
+  ]);
 
 
   // ======================================================
@@ -248,27 +296,41 @@ function App() {
       return;
     }
 
+
     const intervalo =
-      setInterval(() => {
-        validarSessao();
-      }, INTERVALO_VALIDACAO_SESSAO);
+      setInterval(
+        () => {
+          validarSessao();
+        },
+        INTERVALO_VALIDACAO_SESSAO
+      );
+
 
     return () => {
-      clearInterval(intervalo);
+      clearInterval(
+        intervalo
+      );
     };
-  }, [autenticado]);
+  }, [
+    autenticado,
+  ]);
 
 
   // ======================================================
-  // BLOQUEIA USUÁRIOS PARA NÃO-ADMIN
+  // BLOQUEIA USUÁRIOS PARA NÃO ADMIN
   // ======================================================
 
   useEffect(() => {
     if (
-      paginaAtual === "usuarios" &&
-      !usuarioLogado?.administrador
+      paginaAtual ===
+        "usuarios"
+      &&
+      !usuarioLogado
+        ?.administrador
     ) {
-      setPaginaAtual("inicio");
+      setPaginaAtual(
+        "inicio"
+      );
     }
   }, [
     paginaAtual,
@@ -300,16 +362,24 @@ function App() {
       token
     );
 
+
     localStorage.setItem(
       CHAVE_USUARIO,
-      JSON.stringify(usuario)
+      JSON.stringify(
+        usuario
+      )
     );
+
 
     setUsuarioLogado(
       usuario
     );
 
-    setAutenticado(true);
+
+    setAutenticado(
+      true
+    );
+
 
     ultimaAtividadeEnviadaRef.current =
       Date.now();
@@ -325,15 +395,26 @@ function App() {
       CHAVE_TOKEN
     );
 
+
     localStorage.removeItem(
       CHAVE_USUARIO
     );
 
-    setAutenticado(false);
 
-    setUsuarioLogado(null);
+    setAutenticado(
+      false
+    );
 
-    setPaginaAtual("inicio");
+
+    setUsuarioLogado(
+      null
+    );
+
+
+    setPaginaAtual(
+      "inicio"
+    );
+
 
     ultimaAtividadeEnviadaRef.current =
       0;
@@ -348,11 +429,15 @@ function App() {
     const token =
       obterToken();
 
+
     if (!token) {
-      setVerificandoSessao(false);
+      setVerificandoSessao(
+        false
+      );
 
       return;
     }
+
 
     try {
       const resposta =
@@ -360,32 +445,44 @@ function App() {
           `${API_URL}/auth/me`
         );
 
+
       if (!resposta.ok) {
         limparSessao();
 
         return;
       }
 
+
       const dados =
         await resposta.json();
+
 
       setUsuarioLogado(
         dados.usuario
       );
 
-      setAutenticado(true);
+
+      setAutenticado(
+        true
+      );
+
 
       ultimaAtividadeEnviadaRef.current =
         Date.now();
+
     } catch (error) {
       console.error(
         "Erro ao verificar sessão:",
         error
       );
 
+
       limparSessao();
+
     } finally {
-      setVerificandoSessao(false);
+      setVerificandoSessao(
+        false
+      );
     }
   }
 
@@ -398,11 +495,13 @@ function App() {
     const token =
       obterToken();
 
+
     if (!token) {
       limparSessao();
 
       return;
     }
+
 
     try {
       const resposta =
@@ -410,26 +509,34 @@ function App() {
           `${API_URL}/auth/me`
         );
 
+
       if (
-        resposta.status === 401
+        resposta.status ===
+        401
       ) {
         limparSessao();
 
         return;
       }
 
+
       if (!resposta.ok) {
         return;
       }
 
+
       const dados =
         await resposta.json();
 
-      if (dados.usuario) {
+
+      if (
+        dados.usuario
+      ) {
         setUsuarioLogado(
           dados.usuario
         );
       }
+
     } catch (error) {
       console.error(
         "Erro ao validar sessão:",
@@ -440,45 +547,55 @@ function App() {
 
 
   // ======================================================
-  // REGISTRAR ATIVIDADE REAL
+  // REGISTRAR ATIVIDADE
   // ======================================================
 
   async function registrarAtividade() {
     const agora =
       Date.now();
 
+
     if (
       agora -
-        ultimaAtividadeEnviadaRef.current <
+        ultimaAtividadeEnviadaRef.current
+      <
       INTERVALO_MINIMO_ATIVIDADE
     ) {
       return;
     }
 
+
     const token =
       obterToken();
+
 
     if (!token) {
       return;
     }
 
+
     ultimaAtividadeEnviadaRef.current =
       agora;
+
 
     try {
       const resposta =
         await fetch(
           `${API_URL}/auth/atividade`,
           {
-            method: "PUT",
+            method:
+              "PUT",
           }
         );
 
+
       if (
-        resposta.status === 401
+        resposta.status ===
+        401
       ) {
         limparSessao();
       }
+
     } catch (error) {
       console.error(
         "Erro ao registrar atividade:",
@@ -511,20 +628,24 @@ function App() {
     const token =
       obterToken();
 
+
     try {
       if (token) {
         await fetch(
           `${API_URL}/auth/logout`,
           {
-            method: "POST",
+            method:
+              "POST",
           }
         );
       }
+
     } catch (error) {
       console.error(
         "Erro ao realizar logout:",
         error
       );
+
     } finally {
       limparSessao();
     }
@@ -536,30 +657,60 @@ function App() {
   // ======================================================
 
   function renderizarPagina() {
-    switch (paginaAtual) {
+    switch (
+      paginaAtual
+    ) {
+
       case "inicio":
-        return <Home />;
+        return (
+          <Home />
+        );
+
 
       case "professores":
-        return <Professores />;
+        return (
+          <Professores />
+        );
+
 
       case "materiais":
-        return <Materiais />;
+        return (
+          <Materiais />
+        );
+
 
       case "emprestimos":
-        return <Emprestimos />;
+        return (
+          <Emprestimos />
+        );
+
+
+      case "historico":
+        return (
+          <Historico />
+        );
+
 
       case "usuarios":
+
         if (
-          usuarioLogado?.administrador
+          usuarioLogado
+            ?.administrador
         ) {
-          return <Usuarios />;
+          return (
+            <Usuarios />
+          );
         }
 
-        return <Home />;
+        return (
+          <Home />
+        );
+
 
       default:
-        return <Home />;
+        return (
+          <Home />
+        );
     }
   }
 
@@ -568,13 +719,17 @@ function App() {
   // CARREGAMENTO
   // ======================================================
 
-  if (verificandoSessao) {
+  if (
+    verificandoSessao
+  ) {
     return (
       <div
         style={{
-          minHeight: "100vh",
+          minHeight:
+            "100vh",
 
-          display: "flex",
+          display:
+            "flex",
 
           alignItems:
             "center",
@@ -592,7 +747,9 @@ function App() {
             "#334b5c",
         }}
       >
+
         Verificando sessão...
+
       </div>
     );
   }
@@ -602,7 +759,9 @@ function App() {
   // LOGIN
   // ======================================================
 
-  if (!autenticado) {
+  if (
+    !autenticado
+  ) {
     return (
       <Login
         onLogin={
@@ -619,6 +778,7 @@ function App() {
 
   return (
     <div className="app-layout">
+
       <Navbar
         paginaAtual={
           paginaAtual
@@ -633,10 +793,13 @@ function App() {
         }
       />
 
+
       <main className="app-main">
+
         <div
           style={{
-            display: "flex",
+            display:
+              "flex",
 
             justifyContent:
               "flex-end",
@@ -644,13 +807,16 @@ function App() {
             alignItems:
               "center",
 
-            gap: "12px",
+            gap:
+              "12px",
 
             marginBottom:
               "12px",
           }}
         >
+
           {usuarioLogado && (
+
             <span
               style={{
                 fontSize:
@@ -660,7 +826,9 @@ function App() {
                   "#647783",
               }}
             >
-              Usuário:{" "}
+
+              Usuário:
+              {" "}
 
               <strong>
                 {
@@ -668,11 +836,18 @@ function App() {
                 }
               </strong>
 
-              {usuarioLogado
-                .administrador &&
-                " • Administrador"}
+
+              {
+                usuarioLogado
+                  .administrador
+                &&
+                " • Administrador"
+              }
+
             </span>
+
           )}
+
 
           <button
             type="button"
@@ -710,14 +885,22 @@ function App() {
                 "600",
             }}
           >
+
             Sair
+
           </button>
+
         </div>
 
+
         <div className="app-main-container">
+
           {renderizarPagina()}
+
         </div>
+
       </main>
+
     </div>
   );
 }

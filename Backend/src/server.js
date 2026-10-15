@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const cron = require("node-cron");
 const pool = require("./db");
 
 const {
@@ -13,44 +14,24 @@ require("./notificacoes");
 
 const app = express();
 
-
 // ======================================================
 // CORS
 // ======================================================
 
 const origensPermitidas = [
   "http://localhost:3000",
-
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(
   cors({
-    origin: function (
-      origin,
-      callback
-    ) {
-      /*
-        Requisições sem Origin são permitidas
-        para chamadas internas e ferramentas.
-      */
-
+    origin: function (origin, callback) {
       if (!origin) {
-        return callback(
-          null,
-          true
-        );
+        return callback(null, true);
       }
 
-      if (
-        origensPermitidas.includes(
-          origin
-        )
-      ) {
-        return callback(
-          null,
-          true
-        );
+      if (origensPermitidas.includes(origin)) {
+        return callback(null, true);
       }
 
       return callback(
@@ -77,10 +58,7 @@ app.use(
 
 app.use(express.json());
 
-console.log(
-  "SERVIDOR RODANDO"
-);
-
+console.log("SERVIDOR RODANDO");
 
 // ======================================================
 // ROTA PÚBLICA DE TESTE
@@ -89,7 +67,6 @@ console.log(
 app.get("/", (req, res) => {
   res.send("BACKEND ON");
 });
-
 
 // ======================================================
 // AUTENTICAÇÃO
@@ -100,7 +77,6 @@ app.use(
   authRouter
 );
 
-
 // ======================================================
 // TODAS AS ROTAS ABAIXO EXIGEM LOGIN
 // ======================================================
@@ -109,6 +85,105 @@ app.use(
   exigirAutenticacao
 );
 
+// ======================================================
+// HISTÓRICO TEMPORÁRIO - 48 HORAS
+// ======================================================
+
+async function limparHistoricoAntigo() {
+  try {
+    const resultado =
+      await pool.query(`
+        DELETE FROM historico_emprestimos_48h
+
+        WHERE criado_em <
+          NOW() - INTERVAL '48 hours'
+      `);
+
+    if (
+      resultado.rowCount > 0
+    ) {
+      console.log(
+        `Histórico: ${resultado.rowCount} registro(s) antigo(s) removido(s).`
+      );
+    }
+  } catch (erro) {
+    console.error(
+      "Erro ao limpar histórico:",
+      erro.message
+    );
+  }
+}
+
+async function registrarHistoricoEmprestimo(
+  executor,
+  {
+    usuarioId,
+    usuarioNome,
+
+    professorId,
+    professorNome,
+
+    materialId,
+    materialNome,
+
+    quantidade,
+  }
+) {
+  await executor.query(
+    `
+    INSERT INTO
+      historico_emprestimos_48h
+    (
+      usuario_id,
+      usuario_nome,
+
+      professor_id,
+      professor_nome,
+
+      material_id,
+      material_nome,
+
+      quantidade,
+      criado_em
+    )
+
+    VALUES
+    (
+      $1,
+      $2,
+      $3,
+      $4,
+      $5,
+      $6,
+      $7,
+      NOW()
+    )
+    `,
+    [
+      usuarioId,
+      usuarioNome,
+
+      professorId,
+      professorNome,
+
+      materialId,
+      materialNome,
+
+      quantidade,
+    ]
+  );
+}
+
+// Limpa quando o servidor inicia.
+limparHistoricoAntigo();
+
+// Confere novamente a cada hora.
+cron.schedule(
+  "0 * * * *",
+  async () => {
+    await limparHistoricoAntigo();
+  }
+);
 
 // ======================================================
 // DASHBOARD / HOME
@@ -116,6 +191,7 @@ app.use(
 
 app.get(
   "/dashboard/materiais-resumo",
+
   async (req, res) => {
     try {
       const resultado =
@@ -140,7 +216,8 @@ app.get(
                   e.material_id =
                     m.id
 
-                  AND e.devolvido =
+                  AND
+                  e.devolvido =
                     FALSE
               ),
               0
@@ -168,6 +245,7 @@ app.get(
         );
 
       res.json(dados);
+
     } catch (erro) {
       console.error(
         "Erro ao buscar resumo do dashboard:",
@@ -185,27 +263,28 @@ app.get(
   }
 );
 
-
 // ======================================================
 // PROFESSORES
 // ======================================================
 
 app.get(
   "/professores",
+
   async (req, res) => {
     try {
       const resultado =
-        await pool.query(
-          `
+        await pool.query(`
           SELECT *
+
           FROM professores
+
           ORDER BY id DESC
-          `
-        );
+        `);
 
       res.json(
         resultado.rows
       );
+
     } catch (erro) {
       console.error(
         "Erro ao buscar professores:",
@@ -223,9 +302,9 @@ app.get(
   }
 );
 
-
 app.post(
   "/professores",
+
   async (req, res) => {
     try {
       const {
@@ -237,10 +316,12 @@ app.post(
         !nome ||
         !email
       ) {
-        return res.status(400).json({
-          erro:
-            "Nome e email são obrigatórios",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Nome e email são obrigatórios",
+          });
       }
 
       const resultado =
@@ -271,6 +352,7 @@ app.post(
         .json(
           resultado.rows[0]
         );
+
     } catch (erro) {
       console.error(
         "Erro ao cadastrar professor:",
@@ -288,9 +370,9 @@ app.post(
   }
 );
 
-
 app.put(
   "/professores/:id",
+
   async (req, res) => {
     try {
       const {
@@ -306,10 +388,12 @@ app.put(
         !nome ||
         !email
       ) {
-        return res.status(400).json({
-          erro:
-            "Nome e email são obrigatórios",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Nome e email são obrigatórios",
+          });
       }
 
       const resultado =
@@ -333,17 +417,21 @@ app.put(
         );
 
       if (
-        resultado.rows.length === 0
+        resultado.rows.length ===
+        0
       ) {
-        return res.status(404).json({
-          erro:
-            "Professor não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Professor não encontrado",
+          });
       }
 
       res.json(
         resultado.rows[0]
       );
+
     } catch (erro) {
       console.error(
         "Erro ao atualizar professor:",
@@ -361,26 +449,26 @@ app.put(
   }
 );
 
-
 app.delete(
   "/professores/:id",
+
   async (req, res) => {
     const client =
       await pool.connect();
 
     try {
-      const {
-        id,
-      } = req.params;
-
       const professorId =
-        Number(id);
+        Number(
+          req.params.id
+        );
 
       if (!professorId) {
-        return res.status(400).json({
-          erro:
-            "ID do professor inválido",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "ID do professor inválido",
+          });
       }
 
       await client.query(
@@ -391,10 +479,14 @@ app.delete(
         await client.query(
           `
           SELECT id
+
           FROM professores
+
           WHERE id = $1
           `,
-          [professorId]
+          [
+            professorId,
+          ]
         );
 
       if (
@@ -405,10 +497,12 @@ app.delete(
           "ROLLBACK"
         );
 
-        return res.status(404).json({
-          erro:
-            "Professor não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Professor não encontrado",
+          });
       }
 
       const emprestimosAtivos =
@@ -425,13 +519,16 @@ app.delete(
           WHERE
             professor_id = $1
 
-            AND devolvido =
+            AND
+            devolvido =
               FALSE
 
           GROUP BY
             material_id
           `,
-          [professorId]
+          [
+            professorId,
+          ]
         );
 
       for (
@@ -462,19 +559,26 @@ app.delete(
       await client.query(
         `
         DELETE FROM emprestimos
+
         WHERE professor_id = $1
         `,
-        [professorId]
+        [
+          professorId,
+        ]
       );
 
       const resultado =
         await client.query(
           `
           DELETE FROM professores
+
           WHERE id = $1
+
           RETURNING *
           `,
-          [professorId]
+          [
+            professorId,
+          ]
         );
 
       await client.query(
@@ -488,6 +592,7 @@ app.delete(
         professor:
           resultado.rows[0],
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -505,12 +610,12 @@ app.delete(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
-
 
 // ======================================================
 // TIPOS DE MATERIAIS
@@ -518,18 +623,22 @@ app.delete(
 
 app.get(
   "/tipos-materiais",
+
   async (req, res) => {
     try {
       const resultado =
         await pool.query(`
           SELECT *
+
           FROM tipos_materiais
+
           ORDER BY nome ASC
         `);
 
       res.json(
         resultado.rows
       );
+
     } catch (erro) {
       console.error(
         "Erro ao buscar tipos de materiais:",
@@ -547,25 +656,23 @@ app.get(
   }
 );
 
-
 app.post(
   "/tipos-materiais",
+
   async (req, res) => {
     try {
-      const {
-        nome,
-      } = req.body;
-
       const nomeLimpo =
         String(
-          nome || ""
+          req.body.nome || ""
         ).trim();
 
       if (!nomeLimpo) {
-        return res.status(400).json({
-          erro:
-            "Informe o nome do tipo de material",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Informe o nome do tipo de material",
+          });
       }
 
       const existente =
@@ -578,22 +685,28 @@ app.post(
           WHERE LOWER(nome) =
             LOWER($1)
           `,
-          [nomeLimpo]
+          [
+            nomeLimpo,
+          ]
         );
 
       if (
-        existente.rows.length > 0
+        existente.rows.length >
+        0
       ) {
-        return res.status(400).json({
-          erro:
-            "Esse tipo de material já está cadastrado",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Esse tipo de material já está cadastrado",
+          });
       }
 
       const resultado =
         await pool.query(
           `
-          INSERT INTO tipos_materiais
+          INSERT INTO
+            tipos_materiais
           (
             nome
           )
@@ -605,7 +718,9 @@ app.post(
 
           RETURNING *
           `,
-          [nomeLimpo]
+          [
+            nomeLimpo,
+          ]
         );
 
       res
@@ -613,6 +728,7 @@ app.post(
         .json(
           resultado.rows[0]
         );
+
     } catch (erro) {
       console.error(
         "Erro ao cadastrar tipo de material:",
@@ -623,10 +739,12 @@ app.post(
         erro.code ===
         "23505"
       ) {
-        return res.status(400).json({
-          erro:
-            "Esse tipo de material já está cadastrado",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Esse tipo de material já está cadastrado",
+          });
       }
 
       res.status(500).json({
@@ -640,42 +758,40 @@ app.post(
   }
 );
 
-
 app.put(
   "/tipos-materiais/:id",
+
   async (req, res) => {
     const client =
       await pool.connect();
 
     try {
-      const {
-        id,
-      } = req.params;
-
-      const {
-        nome,
-      } = req.body;
-
       const tipoId =
-        Number(id);
+        Number(
+          req.params.id
+        );
 
       const nomeNovo =
         String(
-          nome || ""
+          req.body.nome || ""
         ).trim();
 
       if (!tipoId) {
-        return res.status(400).json({
-          erro:
-            "ID do tipo de material inválido",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "ID do tipo de material inválido",
+          });
       }
 
       if (!nomeNovo) {
-        return res.status(400).json({
-          erro:
-            "Informe o nome do tipo de material",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Informe o nome do tipo de material",
+          });
       }
 
       await client.query(
@@ -686,23 +802,30 @@ app.put(
         await client.query(
           `
           SELECT *
+
           FROM tipos_materiais
+
           WHERE id = $1
           `,
-          [tipoId]
+          [
+            tipoId,
+          ]
         );
 
       if (
-        tipoAtual.rows.length === 0
+        tipoAtual.rows.length ===
+        0
       ) {
         await client.query(
           "ROLLBACK"
         );
 
-        return res.status(404).json({
-          erro:
-            "Tipo de material não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Tipo de material não encontrado",
+          });
       }
 
       const nomeAntigo =
@@ -728,16 +851,19 @@ app.put(
         );
 
       if (
-        duplicado.rows.length > 0
+        duplicado.rows.length >
+        0
       ) {
         await client.query(
           "ROLLBACK"
         );
 
-        return res.status(400).json({
-          erro:
-            "Já existe outro tipo com esse nome",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Já existe outro tipo com esse nome",
+          });
       }
 
       const resultado =
@@ -783,6 +909,7 @@ app.put(
         tipo:
           resultado.rows[0],
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -797,10 +924,12 @@ app.put(
         erro.code ===
         "23505"
       ) {
-        return res.status(400).json({
-          erro:
-            "Já existe outro tipo com esse nome",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Já existe outro tipo com esse nome",
+          });
       }
 
       res.status(500).json({
@@ -810,32 +939,33 @@ app.put(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
 
-
 app.delete(
   "/tipos-materiais/:id",
+
   async (req, res) => {
     const client =
       await pool.connect();
 
     try {
-      const {
-        id,
-      } = req.params;
-
       const tipoId =
-        Number(id);
+        Number(
+          req.params.id
+        );
 
       if (!tipoId) {
-        return res.status(400).json({
-          erro:
-            "ID do tipo de material inválido",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "ID do tipo de material inválido",
+          });
       }
 
       await client.query(
@@ -846,23 +976,30 @@ app.delete(
         await client.query(
           `
           SELECT *
+
           FROM tipos_materiais
+
           WHERE id = $1
           `,
-          [tipoId]
+          [
+            tipoId,
+          ]
         );
 
       if (
-        tipoExiste.rows.length === 0
+        tipoExiste.rows.length ===
+        0
       ) {
         await client.query(
           "ROLLBACK"
         );
 
-        return res.status(404).json({
-          erro:
-            "Tipo de material não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Tipo de material não encontrado",
+          });
       }
 
       const tipo =
@@ -880,7 +1017,9 @@ app.delete(
           WHERE LOWER(tipo) =
             LOWER($1)
           `,
-          [tipo.nome]
+          [
+            tipo.nome,
+          ]
         );
 
       const quantidadeEmUso =
@@ -897,22 +1036,27 @@ app.delete(
           "ROLLBACK"
         );
 
-        return res.status(400).json({
-          erro:
-            `Não é possível excluir o tipo "${tipo.nome}" porque ele está sendo usado por ${quantidadeEmUso} material(is).`,
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              `Não é possível excluir o tipo "${tipo.nome}" porque ele está sendo usado por ${quantidadeEmUso} material(is).`,
+          });
       }
 
       const resultado =
         await client.query(
           `
-          DELETE FROM tipos_materiais
+          DELETE FROM
+            tipos_materiais
 
           WHERE id = $1
 
           RETURNING *
           `,
-          [tipoId]
+          [
+            tipoId,
+          ]
         );
 
       await client.query(
@@ -926,6 +1070,7 @@ app.delete(
         tipo:
           resultado.rows[0],
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -943,12 +1088,12 @@ app.delete(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
-
 
 // ======================================================
 // MATERIAIS
@@ -956,20 +1101,22 @@ app.delete(
 
 app.get(
   "/materiais",
+
   async (req, res) => {
     try {
       const resultado =
-        await pool.query(
-          `
+        await pool.query(`
           SELECT *
+
           FROM materiais
+
           ORDER BY id DESC
-          `
-        );
+        `);
 
       res.json(
         resultado.rows
       );
+
     } catch (erro) {
       console.error(
         "Erro ao buscar materiais:",
@@ -987,9 +1134,9 @@ app.get(
   }
 );
 
-
 app.post(
   "/materiais",
+
   async (req, res) => {
     try {
       const {
@@ -1006,19 +1153,25 @@ app.post(
         quantidade ===
           null
       ) {
-        return res.status(400).json({
-          erro:
-            "Nome, tipo e quantidade são obrigatórios",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Nome, tipo e quantidade são obrigatórios",
+          });
       }
 
       if (
-        Number(quantidade) < 0
+        Number(
+          quantidade
+        ) < 0
       ) {
-        return res.status(400).json({
-          erro:
-            "Quantidade não pode ser negativa",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Quantidade não pode ser negativa",
+          });
       }
 
       const tipoExiste =
@@ -1033,16 +1186,21 @@ app.post(
           WHERE LOWER(nome) =
             LOWER($1)
           `,
-          [tipo]
+          [
+            tipo,
+          ]
         );
 
       if (
-        tipoExiste.rows.length === 0
+        tipoExiste.rows.length ===
+        0
       ) {
-        return res.status(400).json({
-          erro:
-            "O tipo de material selecionado não está cadastrado",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "O tipo de material selecionado não está cadastrado",
+          });
       }
 
       const nomeTipo =
@@ -1081,6 +1239,7 @@ app.post(
         .json(
           resultado.rows[0]
         );
+
     } catch (erro) {
       console.error(
         "Erro ao cadastrar material:",
@@ -1098,9 +1257,9 @@ app.post(
   }
 );
 
-
 app.put(
   "/materiais/:id",
+
   async (req, res) => {
     try {
       const {
@@ -1121,19 +1280,25 @@ app.put(
         quantidade ===
           null
       ) {
-        return res.status(400).json({
-          erro:
-            "Nome, tipo e quantidade são obrigatórios",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Nome, tipo e quantidade são obrigatórios",
+          });
       }
 
       if (
-        Number(quantidade) < 0
+        Number(
+          quantidade
+        ) < 0
       ) {
-        return res.status(400).json({
-          erro:
-            "Quantidade não pode ser negativa",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Quantidade não pode ser negativa",
+          });
       }
 
       const tipoExiste =
@@ -1148,16 +1313,21 @@ app.put(
           WHERE LOWER(nome) =
             LOWER($1)
           `,
-          [tipo]
+          [
+            tipo,
+          ]
         );
 
       if (
-        tipoExiste.rows.length === 0
+        tipoExiste.rows.length ===
+        0
       ) {
-        return res.status(400).json({
-          erro:
-            "O tipo de material selecionado não está cadastrado",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "O tipo de material selecionado não está cadastrado",
+          });
       }
 
       const nomeTipo =
@@ -1188,17 +1358,21 @@ app.put(
         );
 
       if (
-        resultado.rows.length === 0
+        resultado.rows.length ===
+        0
       ) {
-        return res.status(404).json({
-          erro:
-            "Material não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Material não encontrado",
+          });
       }
 
       res.json(
         resultado.rows[0]
       );
+
     } catch (erro) {
       console.error(
         "Erro ao atualizar material:",
@@ -1216,26 +1390,26 @@ app.put(
   }
 );
 
-
 app.delete(
   "/materiais/:id",
+
   async (req, res) => {
     const client =
       await pool.connect();
 
     try {
-      const {
-        id,
-      } = req.params;
-
       const materialId =
-        Number(id);
+        Number(
+          req.params.id
+        );
 
       if (!materialId) {
-        return res.status(400).json({
-          erro:
-            "ID do material inválido",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "ID do material inválido",
+          });
       }
 
       await client.query(
@@ -1246,10 +1420,14 @@ app.delete(
         await client.query(
           `
           SELECT id
+
           FROM materiais
+
           WHERE id = $1
           `,
-          [materialId]
+          [
+            materialId,
+          ]
         );
 
       if (
@@ -1260,28 +1438,37 @@ app.delete(
           "ROLLBACK"
         );
 
-        return res.status(404).json({
-          erro:
-            "Material não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Material não encontrado",
+          });
       }
 
       await client.query(
         `
         DELETE FROM emprestimos
+
         WHERE material_id = $1
         `,
-        [materialId]
+        [
+          materialId,
+        ]
       );
 
       const resultado =
         await client.query(
           `
           DELETE FROM materiais
+
           WHERE id = $1
+
           RETURNING *
           `,
-          [materialId]
+          [
+            materialId,
+          ]
         );
 
       await client.query(
@@ -1295,6 +1482,7 @@ app.delete(
         material:
           resultado.rows[0],
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -1312,12 +1500,12 @@ app.delete(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
-
 
 // ======================================================
 // EMPRÉSTIMOS
@@ -1325,6 +1513,7 @@ app.delete(
 
 app.post(
   "/emprestimos",
+
   async (req, res) => {
     try {
       const {
@@ -1336,17 +1525,21 @@ app.post(
         !professor_id ||
         !material_id
       ) {
-        return res.status(400).json({
-          erro:
-            "professor_id e material_id são obrigatórios",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "professor_id e material_id são obrigatórios",
+          });
       }
 
       const professorExiste =
         await pool.query(
           `
           SELECT *
+
           FROM professores
+
           WHERE id = $1
           `,
           [
@@ -1360,17 +1553,21 @@ app.post(
         professorExiste.rows
           .length === 0
       ) {
-        return res.status(404).json({
-          erro:
-            "Professor não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Professor não encontrado",
+          });
       }
 
       const materialResult =
         await pool.query(
           `
           SELECT *
+
           FROM materiais
+
           WHERE id = $1
           `,
           [
@@ -1384,10 +1581,12 @@ app.post(
         materialResult.rows
           .length === 0
       ) {
-        return res.status(404).json({
-          erro:
-            "Material não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Material não encontrado",
+          });
       }
 
       const material =
@@ -1398,10 +1597,12 @@ app.post(
           material.quantidade
         ) <= 0
       ) {
-        return res.status(400).json({
-          erro:
-            "Material sem estoque",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Material sem estoque",
+          });
       }
 
       const resultado =
@@ -1457,11 +1658,45 @@ app.post(
         ]
       );
 
+      // Registra quem realizou o empréstimo.
+      await registrarHistoricoEmprestimo(
+        pool,
+        {
+          usuarioId:
+            req.auth.usuario_id,
+
+          usuarioNome:
+            req.auth.nome,
+
+          professorId:
+            Number(
+              professor_id
+            ),
+
+          professorNome:
+            professorExiste
+              .rows[0]
+              .nome,
+
+          materialId:
+            Number(
+              material_id
+            ),
+
+          materialNome:
+            material.nome,
+
+          quantidade:
+            1,
+        }
+      );
+
       res
         .status(201)
         .json(
           resultado.rows[0]
         );
+
     } catch (erro) {
       console.error(
         "Erro ao registrar empréstimo:",
@@ -1479,9 +1714,9 @@ app.post(
   }
 );
 
-
 app.post(
   "/emprestimos/lote",
+
   async (req, res) => {
     const client =
       await pool.connect();
@@ -1499,17 +1734,21 @@ app.post(
         ) ||
         itens.length === 0
       ) {
-        return res.status(400).json({
-          erro:
-            "professor_id e itens são obrigatórios",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "professor_id e itens são obrigatórios",
+          });
       }
 
       const professorExiste =
         await client.query(
           `
           SELECT *
+
           FROM professores
+
           WHERE id = $1
           `,
           [
@@ -1523,13 +1762,16 @@ app.post(
         professorExiste.rows
           .length === 0
       ) {
-        return res.status(404).json({
-          erro:
-            "Professor não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Professor não encontrado",
+          });
       }
 
-      const somaPorMaterial = {};
+      const somaPorMaterial =
+        {};
 
       for (
         const item of itens
@@ -1549,10 +1791,12 @@ app.post(
           !quantidade ||
           quantidade < 1
         ) {
-          return res.status(400).json({
-            erro:
-              "Cada item deve ter material_id e quantidade válida",
-          });
+          return res
+            .status(400)
+            .json({
+              erro:
+                "Cada item deve ter material_id e quantidade válida",
+            });
         }
 
         somaPorMaterial[
@@ -1570,6 +1814,9 @@ app.post(
         "BEGIN"
       );
 
+      const materiaisPorId =
+        {};
+
       for (
         const materialId of
         Object.keys(
@@ -1580,7 +1827,9 @@ app.post(
           await client.query(
             `
             SELECT *
+
             FROM materiais
+
             WHERE id = $1
             `,
             [
@@ -1598,19 +1847,29 @@ app.post(
             "ROLLBACK"
           );
 
-          return res.status(404).json({
-            erro:
-              `Material ${materialId} não encontrado`,
-          });
+          return res
+            .status(404)
+            .json({
+              erro:
+                `Material ${materialId} não encontrado`,
+            });
         }
 
         const material =
           materialResult.rows[0];
 
+        materiaisPorId[
+          Number(
+            materialId
+          )
+        ] =
+          material;
+
         if (
           Number(
             material.quantidade
-          ) <
+          )
+          <
           Number(
             somaPorMaterial[
               materialId
@@ -1621,10 +1880,12 @@ app.post(
             "ROLLBACK"
           );
 
-          return res.status(400).json({
-            erro:
-              `Quantidade maior que o estoque para o material ${material.nome}`,
-          });
+          return res
+            .status(400)
+            .json({
+              erro:
+                `Quantidade maior que o estoque para o material ${material.nome}`,
+            });
         }
       }
 
@@ -1693,6 +1954,39 @@ app.post(
             materialId,
           ]
         );
+
+        // Registra quem realizou o empréstimo.
+        await registrarHistoricoEmprestimo(
+          client,
+          {
+            usuarioId:
+              req.auth.usuario_id,
+
+            usuarioNome:
+              req.auth.nome,
+
+            professorId:
+              Number(
+                professor_id
+              ),
+
+            professorNome:
+              professorExiste
+                .rows[0]
+                .nome,
+
+            materialId:
+              materialId,
+
+            materialNome:
+              materiaisPorId[
+                materialId
+              ].nome,
+
+            quantidade:
+              quantidade,
+          }
+        );
       }
 
       await client.query(
@@ -1703,6 +1997,7 @@ app.post(
         mensagem:
           "Empréstimo registrado com sucesso",
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -1720,15 +2015,83 @@ app.post(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
 
+// ======================================================
+// HISTÓRICO DAS ÚLTIMAS 48 HORAS
+// ======================================================
+
+app.get(
+  "/emprestimos/historico-recente",
+
+  async (req, res) => {
+    try {
+      // Também limpa quando o histórico é consultado.
+      await pool.query(`
+        DELETE FROM
+          historico_emprestimos_48h
+
+        WHERE criado_em <
+          NOW() - INTERVAL '48 hours'
+      `);
+
+      const resultado =
+        await pool.query(`
+          SELECT
+            id,
+
+            usuario_id,
+            usuario_nome,
+
+            professor_id,
+            professor_nome,
+
+            material_id,
+            material_nome,
+
+            quantidade,
+            criado_em
+
+          FROM
+            historico_emprestimos_48h
+
+          WHERE criado_em >=
+            NOW() - INTERVAL '48 hours'
+
+          ORDER BY
+            criado_em DESC,
+            id DESC
+        `);
+
+      res.json(
+        resultado.rows
+      );
+
+    } catch (erro) {
+      console.error(
+        "Erro ao buscar histórico recente:",
+        erro.message
+      );
+
+      res.status(500).json({
+        erro:
+          "Erro ao buscar histórico recente de empréstimos",
+
+        detalhe:
+          erro.message,
+      });
+    }
+  }
+);
 
 app.get(
   "/emprestimos",
+
   async (req, res) => {
     try {
       const resultado =
@@ -1767,6 +2130,7 @@ app.get(
       res.json(
         resultado.rows
       );
+
     } catch (erro) {
       console.error(
         "Erro ao buscar empréstimos:",
@@ -1784,9 +2148,9 @@ app.get(
   }
 );
 
-
 app.get(
   "/emprestimos/ativos",
+
   async (req, res) => {
     try {
       const resultado =
@@ -1829,6 +2193,7 @@ app.get(
       res.json(
         resultado.rows
       );
+
     } catch (erro) {
       console.error(
         "Erro ao buscar empréstimos ativos:",
@@ -1846,9 +2211,9 @@ app.get(
   }
 );
 
-
 app.get(
   "/emprestimos/ativos/resumo",
+
   async (req, res) => {
     try {
       const resultado =
@@ -1909,6 +2274,7 @@ app.get(
       res.json(
         resultado.rows
       );
+
     } catch (erro) {
       console.error(
         "Erro ao buscar resumo de empréstimos ativos:",
@@ -1926,24 +2292,24 @@ app.get(
   }
 );
 
-
 app.get(
   "/professores/:id/emprestimos-ativos",
+
   async (req, res) => {
     try {
-      const {
-        id,
-      } = req.params;
-
       const professorExiste =
         await pool.query(
           `
           SELECT *
+
           FROM professores
+
           WHERE id = $1
           `,
           [
-            Number(id),
+            Number(
+              req.params.id
+            ),
           ]
         );
 
@@ -1951,10 +2317,12 @@ app.get(
         professorExiste.rows
           .length === 0
       ) {
-        return res.status(404).json({
-          erro:
-            "Professor não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Professor não encontrado",
+          });
       }
 
       const resultado =
@@ -2016,13 +2384,16 @@ app.get(
             m.nome ASC
           `,
           [
-            Number(id),
+            Number(
+              req.params.id
+            ),
           ]
         );
 
       res.json(
         resultado.rows
       );
+
     } catch (erro) {
       console.error(
         "Erro ao buscar empréstimos ativos do professor:",
@@ -2040,9 +2411,13 @@ app.get(
   }
 );
 
+// ======================================================
+// DEVOLUÇÕES
+// ======================================================
 
 app.put(
   "/emprestimos/devolver-lote",
+
   async (req, res) => {
     const client =
       await pool.connect();
@@ -2058,10 +2433,12 @@ app.put(
         ) ||
         ids.length === 0
       ) {
-        return res.status(400).json({
-          erro:
-            "Envie uma lista de ids para devolução",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Envie uma lista de ids para devolução",
+          });
       }
 
       await client.query(
@@ -2081,20 +2458,25 @@ app.put(
           WHERE id =
             ANY($1::int[])
           `,
-          [ids]
+          [
+            ids,
+          ]
         );
 
       if (
-        registros.rows.length === 0
+        registros.rows.length ===
+        0
       ) {
         await client.query(
           "ROLLBACK"
         );
 
-        return res.status(404).json({
-          erro:
-            "Nenhum empréstimo encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Nenhum empréstimo encontrado",
+          });
       }
 
       const ativos =
@@ -2111,10 +2493,12 @@ app.put(
           "ROLLBACK"
         );
 
-        return res.status(400).json({
-          erro:
-            "Todos os itens já foram devolvidos",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Todos os itens já foram devolvidos",
+          });
       }
 
       const quantidadePorMaterial =
@@ -2137,15 +2521,20 @@ app.put(
         `
         UPDATE emprestimos
 
-        SET devolvido = TRUE
+        SET devolvido =
+          TRUE
 
         WHERE
-          id = ANY($1::int[])
+          id =
+            ANY($1::int[])
 
-          AND devolvido =
+          AND
+          devolvido =
             FALSE
         `,
-        [ids]
+        [
+          ids,
+        ]
       );
 
       for (
@@ -2186,6 +2575,7 @@ app.put(
         quantidade_devolvida:
           ativos.length,
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -2203,15 +2593,16 @@ app.put(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
 
-
 app.put(
   "/emprestimos/devolver-parcial",
+
   async (req, res) => {
     const client =
       await pool.connect();
@@ -2228,10 +2619,12 @@ app.put(
         !material_id ||
         !quantidade
       ) {
-        return res.status(400).json({
-          erro:
-            "professor_id, material_id e quantidade são obrigatórios",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "professor_id, material_id e quantidade são obrigatórios",
+          });
       }
 
       if (
@@ -2239,10 +2632,12 @@ app.put(
           quantidade
         ) < 1
       ) {
-        return res.status(400).json({
-          erro:
-            "A quantidade deve ser pelo menos 1",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "A quantidade deve ser pelo menos 1",
+          });
       }
 
       await client.query(
@@ -2259,10 +2654,12 @@ app.put(
           WHERE
             professor_id = $1
 
-            AND material_id =
+            AND
+            material_id =
               $2
 
-            AND devolvido =
+            AND
+            devolvido =
               FALSE
 
           ORDER BY id ASC
@@ -2285,16 +2682,19 @@ app.put(
         );
 
       if (
-        ativos.rows.length === 0
+        ativos.rows.length ===
+        0
       ) {
         await client.query(
           "ROLLBACK"
         );
 
-        return res.status(404).json({
-          erro:
-            "Nenhum item ativo encontrado para devolução",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Nenhum item ativo encontrado para devolução",
+          });
       }
 
       if (
@@ -2307,10 +2707,12 @@ app.put(
           "ROLLBACK"
         );
 
-        return res.status(400).json({
-          erro:
-            "Quantidade para devolução maior do que a quantidade emprestada",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Quantidade para devolução maior do que a quantidade emprestada",
+          });
       }
 
       const ids =
@@ -2323,12 +2725,15 @@ app.put(
         `
         UPDATE emprestimos
 
-        SET devolvido = TRUE
+        SET devolvido =
+          TRUE
 
         WHERE id =
           ANY($1::int[])
         `,
-        [ids]
+        [
+          ids,
+        ]
       );
 
       await client.query(
@@ -2362,6 +2767,7 @@ app.put(
         ids_devolvidos:
           ids,
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -2379,15 +2785,16 @@ app.put(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
 
-
 app.put(
   "/emprestimos/devolver-tudo/:professor_id",
+
   async (req, res) => {
     const client =
       await pool.connect();
@@ -2398,10 +2805,12 @@ app.put(
       } = req.params;
 
       if (!professor_id) {
-        return res.status(400).json({
-          erro:
-            "professor_id é obrigatório",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "professor_id é obrigatório",
+          });
       }
 
       await client.query(
@@ -2412,7 +2821,9 @@ app.put(
         await client.query(
           `
           SELECT *
+
           FROM professores
+
           WHERE id = $1
           `,
           [
@@ -2430,10 +2841,12 @@ app.put(
           "ROLLBACK"
         );
 
-        return res.status(404).json({
-          erro:
-            "Professor não encontrado",
-        });
+        return res
+          .status(404)
+          .json({
+            erro:
+              "Professor não encontrado",
+          });
       }
 
       const emprestimosAtivos =
@@ -2448,7 +2861,8 @@ app.put(
           WHERE
             professor_id = $1
 
-            AND devolvido =
+            AND
+            devolvido =
               FALSE
           `,
           [
@@ -2466,10 +2880,12 @@ app.put(
           "ROLLBACK"
         );
 
-        return res.status(400).json({
-          erro:
-            "Esse professor não possui itens ativos para devolução",
-        });
+        return res
+          .status(400)
+          .json({
+            erro:
+              "Esse professor não possui itens ativos para devolução",
+          });
       }
 
       const quantidadePorMaterial =
@@ -2493,12 +2909,14 @@ app.put(
         `
         UPDATE emprestimos
 
-        SET devolvido = TRUE
+        SET devolvido =
+          TRUE
 
         WHERE
           professor_id = $1
 
-          AND devolvido =
+          AND
+          devolvido =
             FALSE
         `,
         [
@@ -2543,15 +2961,11 @@ app.put(
         mensagem:
           "Todos os itens foram devolvidos com sucesso",
 
-        professor_id:
-          Number(
-            professor_id
-          ),
-
         itens_devolvidos:
-          emprestimosAtivos
-            .rows.length,
+          emprestimosAtivos.rows
+            .length,
       });
+
     } catch (erro) {
       await client.query(
         "ROLLBACK"
@@ -2569,12 +2983,12 @@ app.put(
         detalhe:
           erro.message,
       });
+
     } finally {
       client.release();
     }
   }
 );
-
 
 // ======================================================
 // INICIAR SERVIDOR
@@ -2586,6 +3000,7 @@ const PORT =
 
 app.listen(
   PORT,
+
   () => {
     console.log(
       `Servidor rodando na porta ${PORT}`
